@@ -9,6 +9,7 @@ import com.github.seratch.jslack.Slack;
 import com.github.seratch.jslack.api.methods.SlackApiException;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
+import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
 import com.github.seratch.jslack.api.methods.request.conversations.ConversationsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
 import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
@@ -107,6 +108,7 @@ public class Chat extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Chat");
 
+        txtMsgRecebida.setEditable(false);
         txtMsgRecebida.setColumns(20);
         txtMsgRecebida.setRows(5);
         jScrollPane1.setViewportView(txtMsgRecebida);
@@ -186,9 +188,17 @@ public class Chat extends javax.swing.JFrame {
         // Clique no botão de enviar
         if (!txtMsgEnviar.getText().isEmpty()) {
             String mensagem = txtMsgEnviar.getText();
-
+            try {
+                slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(token).channel(slack.methods().channelsList(ChannelsListRequest.builder().token(token).build()).getChannels().get(0).getId()).build());
+                setChatHistory();
+                txtMsgEnviar.setText("");
+            } catch (IOException ex) {
+                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SlackApiException ex) {
+                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+            }
+       
         }
-
     }//GEN-LAST:event_btnEnviarActionPerformed
 
 
@@ -216,18 +226,19 @@ public class Chat extends javax.swing.JFrame {
             ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
                     .token("xoxp-353804391270-352655713073-366821465655-96b2ea65b7128c7b475e08bc304f7a4a")
                     .channel(channelID)
+                    .count(1000)
                     .build());;
             System.out.println(channelID);
             System.out.println(history);
             if (history.getMessages() != null) {
-                for (Message message : history.getMessages()) {
-                    if (message.getUsername()!=null)
+                for (int i = history.getMessages().size()-1 ; i >= 0; i--) {
+                    if (history.getMessages().get(i).getUsername()!=null)
                     {
-                        txtMsgRecebida.append(message.getUsername()+": "+message.getText() + "\n");
+                        txtMsgRecebida.append(history.getMessages().get(i).getUsername()+": "+history.getMessages().get(i).getText() + "\n");
                     }
                     else
                     {
-                        txtMsgRecebida.append(message.getText() + "\n");
+                        txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
                     }
                 }
             }
