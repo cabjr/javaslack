@@ -212,12 +212,23 @@ public class Chat extends javax.swing.JFrame {
         try {
             txtMsgRecebida.setText("");
             String channelID = slack.methods().channelsList(ChannelsListRequest.builder().token(token).build()).getChannels().get(0).getId();
-            ConversationsHistoryResponse messages = slack.methods().conversationsHistory(ConversationsHistoryRequest.builder().token(token).channel(channelID).limit(20).build());
+            System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(token).build()).getMessages());
+            ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
+                    .token("xoxp-353804391270-352655713073-366821465655-96b2ea65b7128c7b475e08bc304f7a4a")
+                    .channel(channelID)
+                    .build());;
             System.out.println(channelID);
-            System.out.println(messages);
-            if (messages.getMessages() != null) {
-                for (Message message : messages.getMessages()) {
-                    txtMsgRecebida.append(message + "\n");
+            System.out.println(history);
+            if (history.getMessages() != null) {
+                for (Message message : history.getMessages()) {
+                    if (message.getUsername()!=null)
+                    {
+                        txtMsgRecebida.append(message.getUsername()+": "+message.getText() + "\n");
+                    }
+                    else
+                    {
+                        txtMsgRecebida.append(message.getText() + "\n");
+                    }
                 }
             }
         } catch (IOException | SlackApiException ex) {
