@@ -19,10 +19,13 @@ import com.github.seratch.jslack.api.model.Message;
 import com.github.seratch.jslack.api.model.User;
 import java.awt.List;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 /**
  *
@@ -32,8 +35,10 @@ public class Chat extends javax.swing.JFrame {
 
     String token;
     Slack slack;
+    int CanalAtual = 0;
     DefaultListModel listModelCanais = new DefaultListModel();
     DefaultListModel listModelUsuarios = new DefaultListModel();
+    ArrayList<Channel> canais = new ArrayList<Channel>();
 
     /**
      * Creates new form Chat
@@ -51,15 +56,29 @@ public class Chat extends javax.swing.JFrame {
         setListUsers();
         setChatHistory();
 
+        listCanais.addListSelectionListener(new ListSelectionListener() {
+
+            @Override
+            public void valueChanged(ListSelectionEvent arg0) {
+                CanalAtual = listCanais.getSelectedIndex();
+                setChatHistory();
+            }
+        });
+
     }
 
     private void setListChannel() {
         try {
             listModelCanais.removeAllElements();
+            canais.removeAll(canais);
             ListIterator<Channel> channels = (ListIterator<Channel>) slack.methods().channelsList(ChannelsListRequest.builder().token(token).build())
                     .getChannels().listIterator();
             while (channels.hasNext()) {
-                listModelCanais.addElement(channels.next().getName());
+                Channel canal = channels.next();
+                if (canal != null) {
+                    canais.add(canal);
+                }
+                listModelCanais.addElement(canal.getName());
             }
         } catch (IOException | SlackApiException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
@@ -126,6 +145,11 @@ public class Chat extends javax.swing.JFrame {
 
         jLabel3.setText("Apps");
 
+        listCanais.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                listCanaisPropertyChange(evt);
+            }
+        });
         jScrollPane2.setViewportView(listCanais);
 
         jScrollPane3.setViewportView(listDM);
@@ -197,9 +221,13 @@ public class Chat extends javax.swing.JFrame {
             } catch (SlackApiException ex) {
                 Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
             }
-       
+
         }
     }//GEN-LAST:event_btnEnviarActionPerformed
+
+    private void listCanaisPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_listCanaisPropertyChange
+
+    }//GEN-LAST:event_listCanaisPropertyChange
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -221,23 +249,20 @@ public class Chat extends javax.swing.JFrame {
     private void setChatHistory() {
         try {
             txtMsgRecebida.setText("");
-            String channelID = slack.methods().channelsList(ChannelsListRequest.builder().token(token).build()).getChannels().get(0).getId();
+            String channelID = canais.get(CanalAtual).getId();
             System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(token).build()).getMessages());
             ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
-                    .token("xoxp-353804391270-352655713073-366821465655-96b2ea65b7128c7b475e08bc304f7a4a")
+                    .token("xoxp-353804391270-352655713073-365950173941-963371ea13b967b635074764eb7aa384")
                     .channel(channelID)
                     .count(1000)
                     .build());;
             System.out.println(channelID);
             System.out.println(history);
             if (history.getMessages() != null) {
-                for (int i = history.getMessages().size()-1 ; i >= 0; i--) {
-                    if (history.getMessages().get(i).getUsername()!=null)
-                    {
-                        txtMsgRecebida.append(history.getMessages().get(i).getUsername()+": "+history.getMessages().get(i).getText() + "\n");
-                    }
-                    else
-                    {
+                for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                    if (history.getMessages().get(i).getUsername() != null) {
+                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
+                    } else {
                         txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
                     }
                 }
