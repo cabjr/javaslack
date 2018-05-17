@@ -10,18 +10,27 @@ import com.github.seratch.jslack.api.methods.SlackApiException;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
 import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
+import com.github.seratch.jslack.api.methods.request.im.ImHistoryRequest;
+import com.github.seratch.jslack.api.methods.request.im.ImOpenRequest;
 import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
 import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
+import com.github.seratch.jslack.api.methods.response.chat.ChatPostMessageResponse;
+import com.github.seratch.jslack.api.methods.response.im.ImHistoryResponse;
+import com.github.seratch.jslack.api.methods.response.im.ImOpenResponse;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import pt.ipb.ssi.chatslack.rtm.RTMRunnable;
 
 /**
  *
@@ -32,6 +41,9 @@ public class Chat extends javax.swing.JFrame {
     String botUserToken, token;
     Slack slack;
     int CanalAtual = 0;
+    int usuarioAtual = 0;
+    Map<String, String> usuarioMap = new HashMap<>();
+
     DefaultListModel listModelCanais = new DefaultListModel();
     DefaultListModel listModelUsuarios = new DefaultListModel();
     ArrayList<Channel> canais = new ArrayList<Channel>();
@@ -53,14 +65,65 @@ public class Chat extends javax.swing.JFrame {
         setListChannel();
         setListUsers();
         setChatHistory();
+        //setRTM();
 
         listCanais.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent arg0) {
+                listDM.clearSelection();
                 CanalAtual = listCanais.getSelectedIndex();
                 setChatHistory();
             }
         });
+
+        listDM.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                listCanais.clearSelection();
+                usuarioAtual = listDM.getSelectedIndex();
+                String userName = listDM.getSelectedValue();
+                System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
+                setDMChatHistory(usuarioMap.get(userName));
+            }
+
+        });
+
+    }
+
+    private void setDMChatHistory(String userID) {
+        try {
+            txtMsgRecebida.setText("");
+            //Abre um canal para aquele usuario
+            // Scope: 	bot, user: im:write post
+            ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(userID).token(token).build());
+            if (canal.getChannel().getId() != null) {
+                ImHistoryResponse history = slack.methods().imHistory(
+                        ImHistoryRequest.builder()
+                                .channel(canal.getChannel().getId())
+                                .token(token)
+                                .count(1000)
+                                .build());
+                System.out.println("history " + history);
+                if (history.getMessages() != null) {
+                    for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                        if (history.getMessages().get(i).getUsername() != null) {
+                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
+                        } else if (history.getMessages().get(i).getText().contains("<@")) {
+
+                            /*String pieces[] = history.getMessages().get(i).getText().split(">");
+                        String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
+                        System.out.println(name);*/
+                            txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+
+                        } else {
+                            txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                        }
+                    }
+                }
+            }
+        } catch (IOException | SlackApiException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
     }
 
@@ -84,13 +147,13 @@ public class Chat extends javax.swing.JFrame {
 
     private void setListUsers() {
         try {
-            ListIterator<User> users = (ListIterator<User>) slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build())
-                    .getMembers().listIterator();
+            List<User> users = slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build())
+                    .getMembers();
             System.out.println(slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build()));
-            while (users.hasNext()) {
-                User user = users.next();
+            for (User user : users) {
                 if (!user.isBot()) {
                     listModelUsuarios.addElement(user.getName());
+                    usuarioMap.put(user.getName(), user.getId());
                 }
             }
         } catch (IOException | SlackApiException ex) {
@@ -173,7 +236,7 @@ public class Chat extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnEnviar))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 449, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(31, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -198,7 +261,7 @@ public class Chat extends javax.swing.JFrame {
                         .addComponent(jLabel3)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
 
         pack();
@@ -207,19 +270,46 @@ public class Chat extends javax.swing.JFrame {
 
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
         // Clique no botão de enviar
-        String channelID = canais.get(CanalAtual).getId();
-        if (!txtMsgEnviar.getText().isEmpty()) {
-            String mensagem = txtMsgEnviar.getText();
+        if (!listCanais.isSelectionEmpty()) {
+
+            String channelID = canais.get(CanalAtual).getId();
+            if (!txtMsgEnviar.getText().isEmpty()) {
+                String mensagem = txtMsgEnviar.getText();
+                try {
+                    slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channelID).build());
+                    setChatHistory();
+                    txtMsgEnviar.setText("");
+                } catch (IOException ex) {
+                    Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SlackApiException ex) {
+                    Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+            }
+        } else {
             try {
-                slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channelID).build());
-                setChatHistory();
-                txtMsgEnviar.setText("");
-            } catch (IOException ex) {
-                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SlackApiException ex) {
+                ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(usuarioMap.get(listDM.getSelectedValue())).token(token).build());
+                if (canal.getChannel().getId() != null) {
+                    if (!txtMsgEnviar.getText().isEmpty()) {
+                        String channelID = canal.getChannel().getId();
+                        String mensagem = txtMsgEnviar.getText();
+                        System.out.println("Chanel " + channelID + " msg " + mensagem);
+                        ChatPostMessageResponse test = slack.methods().chatPostMessage(
+                                ChatPostMessageRequest.builder()
+                                .text(mensagem)
+                                .token(token)
+                                .channel(channelID)
+                                .build()
+                        );
+                        System.out.println("test  " + test);
+                        setDMChatHistory(usuarioMap.get(listDM.getSelectedValue()));
+                        txtMsgEnviar.setText("");
+
+                    }
+                }
+            } catch (IOException | SlackApiException ex) {
                 Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
             }
-
         }
     }//GEN-LAST:event_btnEnviarActionPerformed
 
@@ -253,29 +343,32 @@ public class Chat extends javax.swing.JFrame {
                     .token(token)
                     .channel(channelID)
                     .count(1000)
-                    .build());;
+                    .build());
             System.out.println(channelID);
             System.out.println(history);
             if (history.getMessages() != null) {
                 for (int i = history.getMessages().size() - 1; i >= 0; i--) {
                     if (history.getMessages().get(i).getUsername() != null) {
                         txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                    }
-                    else if(history.getMessages().get(i).getText().contains("<@")) {
+                    } else if (history.getMessages().get(i).getText().contains("<@")) {
 
                         /*String pieces[] = history.getMessages().get(i).getText().split(">");
                         String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
                         System.out.println(name);*/
-                        txtMsgRecebida.append(/*name */ " " + history.getMessages().get(i).getText() + "\n");
+                        txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
 
+                    } else {
+                        txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
                     }
-                    else {
-                            txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
-                        }
                 }
             }
         } catch (IOException | SlackApiException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void setRTM() {
+        Thread thread = new Thread(new RTMRunnable(slack, token));
+        thread.start();
     }
 }
