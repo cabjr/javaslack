@@ -7,13 +7,21 @@ package pt.ipb.ssi.chatslack.gui;
 
 import com.github.seratch.jslack.Slack;
 import com.github.seratch.jslack.api.methods.SlackApiException;
+import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
+import com.github.seratch.jslack.api.methods.request.conversations.ConversationsHistoryRequest;
+import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
+import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
+import com.github.seratch.jslack.api.methods.response.conversations.ConversationsHistoryResponse;
 import com.github.seratch.jslack.api.model.Channel;
+import com.github.seratch.jslack.api.model.Message;
+import com.github.seratch.jslack.api.model.User;
 import java.awt.List;
 import java.io.IOException;
 import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.DefaultListModel;
 
 /**
  *
@@ -23,6 +31,8 @@ public class Chat extends javax.swing.JFrame {
 
     String token;
     Slack slack;
+    DefaultListModel listModelCanais = new DefaultListModel();
+    DefaultListModel listModelUsuarios = new DefaultListModel();
 
     /**
      * Creates new form Chat
@@ -33,16 +43,38 @@ public class Chat extends javax.swing.JFrame {
         initComponents();
         this.slack = Slack.getInstance();
         this.token = token;
+        listCanais.setModel(listModelCanais);
+        listDM.setModel(listModelUsuarios);
+
         setListChannel();
+        setListUsers();
+        setChatHistory();
 
     }
 
     private void setListChannel() {
         try {
+            listModelCanais.removeAllElements();
             ListIterator<Channel> channels = (ListIterator<Channel>) slack.methods().channelsList(ChannelsListRequest.builder().token(token).build())
                     .getChannels().listIterator();
             while (channels.hasNext()) {
-                ///listCanais.ad(channels.next().getName());
+                listModelCanais.addElement(channels.next().getName());
+            }
+        } catch (IOException | SlackApiException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void setListUsers() {
+        try {
+            ListIterator<User> users = (ListIterator<User>) slack.methods().usersList(UsersListRequest.builder().token(token).build())
+                    .getMembers().listIterator();
+            System.out.println(slack.methods().usersList(UsersListRequest.builder().token(token).build()));
+            while (users.hasNext()) {
+                User user = users.next();
+                if (!user.isBot()) {
+                    listModelUsuarios.addElement(user.getName());
+                }
             }
         } catch (IOException | SlackApiException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
@@ -175,4 +207,21 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JTextField txtMsgEnviar;
     private javax.swing.JTextArea txtMsgRecebida;
     // End of variables declaration//GEN-END:variables
+
+    private void setChatHistory() {
+        try {
+            txtMsgRecebida.setText("");
+            String channelID = slack.methods().channelsList(ChannelsListRequest.builder().token(token).build()).getChannels().get(0).getId();
+            ConversationsHistoryResponse messages = slack.methods().conversationsHistory(ConversationsHistoryRequest.builder().token(token).channel(channelID).limit(20).build());
+            System.out.println(channelID);
+            System.out.println(messages);
+            if (messages.getMessages() != null) {
+                for (Message message : messages.getMessages()) {
+                    txtMsgRecebida.append(message + "\n");
+                }
+            }
+        } catch (IOException | SlackApiException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }

@@ -88,7 +88,7 @@ public class Login extends javax.swing.JFrame {
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         if (txtToken.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Informe o Token!");
-        } else if (txtToken.getText().contains("xoxb") ) {
+        } else if (txtToken.getText().contains("xoxb")) {
             try {
                 // Faça a conexão para o slack com o token informado
                 // Cria uma instancia do Slack
@@ -100,8 +100,9 @@ public class Login extends javax.swing.JFrame {
                 if (response.isOk()) {
                     // Caso teve sucesso na validação com o token
                     // Abre a janela do chat
-                    setVisible(false);
                     new Chat(token).setVisible(true);
+                    setVisible(false);
+
                 } else {
                     JOptionPane.showMessageDialog(null, "Erro ao acessar o Slack com esse token");
                 }
