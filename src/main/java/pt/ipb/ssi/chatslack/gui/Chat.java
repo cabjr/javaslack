@@ -10,15 +10,10 @@ import com.github.seratch.jslack.api.methods.SlackApiException;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
 import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
-import com.github.seratch.jslack.api.methods.request.conversations.ConversationsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
-import com.github.seratch.jslack.api.methods.request.users.profile.UsersProfileGetRequest;
 import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
-import com.github.seratch.jslack.api.methods.response.conversations.ConversationsHistoryResponse;
 import com.github.seratch.jslack.api.model.Channel;
-import com.github.seratch.jslack.api.model.Message;
 import com.github.seratch.jslack.api.model.User;
-import java.awt.List;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.ListIterator;
@@ -34,7 +29,7 @@ import javax.swing.event.ListSelectionListener;
  */
 public class Chat extends javax.swing.JFrame {
 
-    String token;
+    String botUserToken, token;
     Slack slack;
     int CanalAtual = 0;
     DefaultListModel listModelCanais = new DefaultListModel();
@@ -44,11 +39,13 @@ public class Chat extends javax.swing.JFrame {
     /**
      * Creates new form Chat
      *
+     * @param botUserToken
      * @param token
      */
-    public Chat(String token) {
+    public Chat(String botUserToken, String token) {
         initComponents();
         this.slack = Slack.getInstance();
+        this.botUserToken = botUserToken;
         this.token = token;
         listCanais.setModel(listModelCanais);
         listDM.setModel(listModelUsuarios);
@@ -71,7 +68,7 @@ public class Chat extends javax.swing.JFrame {
         try {
             listModelCanais.removeAllElements();
             canais.removeAll(canais);
-            ListIterator<Channel> channels = (ListIterator<Channel>) slack.methods().channelsList(ChannelsListRequest.builder().token(token).build())
+            ListIterator<Channel> channels = (ListIterator<Channel>) slack.methods().channelsList(ChannelsListRequest.builder().token(botUserToken).build())
                     .getChannels().listIterator();
             while (channels.hasNext()) {
                 Channel canal = channels.next();
@@ -87,9 +84,9 @@ public class Chat extends javax.swing.JFrame {
 
     private void setListUsers() {
         try {
-            ListIterator<User> users = (ListIterator<User>) slack.methods().usersList(UsersListRequest.builder().token(token).build())
+            ListIterator<User> users = (ListIterator<User>) slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build())
                     .getMembers().listIterator();
-            System.out.println(slack.methods().usersList(UsersListRequest.builder().token(token).build()));
+            System.out.println(slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build()));
             while (users.hasNext()) {
                 User user = users.next();
                 if (!user.isBot()) {
@@ -214,7 +211,7 @@ public class Chat extends javax.swing.JFrame {
         if (!txtMsgEnviar.getText().isEmpty()) {
             String mensagem = txtMsgEnviar.getText();
             try {
-                slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(token).channel(channelID).build());
+                slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channelID).build());
                 setChatHistory();
                 txtMsgEnviar.setText("");
             } catch (IOException ex) {
@@ -251,9 +248,9 @@ public class Chat extends javax.swing.JFrame {
         try {
             txtMsgRecebida.setText("");
             String channelID = canais.get(CanalAtual).getId();
-            System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(token).build()).getMessages());
+            System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(botUserToken).build()).getMessages());
             ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
-                    .token("xoxp-353804391270-352655713073-365950173941-963371ea13b967b635074764eb7aa384")
+                    .token(token)
                     .channel(channelID)
                     .count(1000)
                     .build());;

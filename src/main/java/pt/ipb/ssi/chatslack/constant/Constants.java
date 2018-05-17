@@ -11,6 +11,7 @@ package pt.ipb.ssi.chatslack.constant;
  */
 public class Constants {
 
-    public static final String OAUTH_ACCESS_TOKEN = "OAUTH_ACCESS_TOKEN";
+    public static final String OAUTH_ACCESS_TOKEN           = "OAUTH_ACCESS_TOKEN";
+    public static final String BOT_USER_OAUTH_ACCESS_TOKEN  = "BOT_USER_OAUTH_ACCESS_TOKEN";
 
 }
