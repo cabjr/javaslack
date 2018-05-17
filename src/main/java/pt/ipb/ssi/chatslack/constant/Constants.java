@@ -3,17 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package pt.ipb.ssi.chatslack;
-
-import pt.ipb.ssi.chatslack.gui.Login;
+package pt.ipb.ssi.chatslack.constant;
 
 /**
  *
  * @author Douglas Folletto
  */
-public class Teste {
-    
-    public static void main(String[] args) {
-        new Login().setVisible(true);
-    }
+public class Constants {
+
+    public static final String OAUTH_ACCESS_TOKEN = "OAUTH_ACCESS_TOKEN";
+
 }

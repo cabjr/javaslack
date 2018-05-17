@@ -6,6 +6,12 @@
 package pt.ipb.ssi.chatslack.gui;
 
 import com.github.seratch.jslack.Slack;
+import com.github.seratch.jslack.api.methods.SlackApiException;
+import com.github.seratch.jslack.api.methods.request.auth.AuthTestRequest;
+import com.github.seratch.jslack.api.methods.response.auth.AuthTestResponse;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 /**
@@ -19,6 +25,7 @@ public class Login extends javax.swing.JFrame {
      */
     public Login() {
         initComponents();
+        txtToken.setText("xoxb-353804391270-364016632531-5FL3vzotYF1ste5VFi8G8fWf");
     }
 
     /**
@@ -79,19 +86,27 @@ public class Login extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
-        if (txtToken.getText().isEmpty()) {
+        if (txtToken.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Informe o Token!");
-        } else if (txtToken.getText().contains("xoxb")) {
-            // Faça a conexão para o slack com o token informado
-            // 
-            Slack slack = Slack.getInstance();
-
-            if (true) {
-                // Caso teve sucesso na validação com o token
-                // Abre a janela do chat
-                new Chat().setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(null, "Erro ao acessar o Slack com esse token");
+        } else if (txtToken.getText().contains("xoxb") ) {
+            try {
+                // Faça a conexão para o slack com o token informado
+                // Cria uma instancia do Slack
+                Slack slack = Slack.getInstance();
+                // Pega o token informado
+                String token = txtToken.getText().trim();
+                // Realiza uma consulta para validar o token
+                AuthTestResponse response = slack.methods().authTest(AuthTestRequest.builder().token(token).build());
+                if (response.isOk()) {
+                    // Caso teve sucesso na validação com o token
+                    // Abre a janela do chat
+                    setVisible(false);
+                    new Chat(token).setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Erro ao acessar o Slack com esse token");
+                }
+            } catch (IOException | SlackApiException ex) {
+                Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
             JOptionPane.showMessageDialog(null, "Token Inválido");

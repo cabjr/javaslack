@@ -5,17 +5,48 @@
  */
 package pt.ipb.ssi.chatslack.gui;
 
+import com.github.seratch.jslack.Slack;
+import com.github.seratch.jslack.api.methods.SlackApiException;
+import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
+import com.github.seratch.jslack.api.model.Channel;
+import java.awt.List;
+import java.io.IOException;
+import java.util.ListIterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author Douglas Folletto
  */
 public class Chat extends javax.swing.JFrame {
 
+    String token;
+    Slack slack;
+
     /**
      * Creates new form Chat
+     *
+     * @param token
      */
-    public Chat() {
+    public Chat(String token) {
         initComponents();
+        this.slack = Slack.getInstance();
+        this.token = token;
+        setListChannel();
+
+    }
+
+    private void setListChannel() {
+        try {
+            ListIterator<Channel> channels = (ListIterator<Channel>) slack.methods().channelsList(ChannelsListRequest.builder().token(token).build())
+                    .getChannels().listIterator();
+            while (channels.hasNext()) {
+                ///listCanais.ad(channels.next().getName());
+            }
+        } catch (IOException | SlackApiException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -121,14 +152,12 @@ public class Chat extends javax.swing.JFrame {
 
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
         // Clique no botão de enviar
-        if(!txtMsgEnviar.getText().isEmpty()){
+        if (!txtMsgEnviar.getText().isEmpty()) {
             String mensagem = txtMsgEnviar.getText();
-            
-        
-        }
-        
-    }//GEN-LAST:event_btnEnviarActionPerformed
 
+        }
+
+    }//GEN-LAST:event_btnEnviarActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
