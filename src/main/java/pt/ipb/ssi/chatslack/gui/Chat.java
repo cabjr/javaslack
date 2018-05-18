@@ -36,6 +36,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.Key;
@@ -734,6 +735,50 @@ public class Chat extends javax.swing.JFrame {
         return bOut.toByteArray();
     }
 
+    private static OutputStream convertStringtoStream(String string) throws IOException {
+        byte[] stringByte = string.getBytes();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(string.length());
+        bos.write(stringByte);
+        return bos;
+    }
+
+    private static void encryptMessage(String mensagem, String nomeChave, boolean armor, boolean withIntegrityCheck) throws IOException, PGPException {
+        PGPPublicKey encKey = readPublicKey(nomeChave);
+        OutputStream out;
+        out = convertStringtoStream(mensagem);
+        if (armor) {
+            out = new ArmoredOutputStream(out);
+        }
+
+        try {
+            byte[] bytes = mensagem.getBytes();
+
+            PGPEncryptedDataGenerator encGen = new PGPEncryptedDataGenerator(
+                    new JcePGPDataEncryptorBuilder(PGPEncryptedData.CAST5).setWithIntegrityPacket(withIntegrityCheck).setSecureRandom(new SecureRandom()).setProvider("BC"));
+
+            encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(encKey).setProvider("BC"));
+
+            OutputStream cOut = encGen.open(out, bytes.length);
+
+            cOut.write(bytes);
+            cOut.close();
+
+            System.out.println(cOut.toString());
+
+            if (armor) {
+                out.close();
+            }
+        } catch (PGPException e) {
+            System.err.println(e);
+            if (e.getUnderlyingException() != null) {
+                e.getUnderlyingException().printStackTrace();
+            }
+        }
+
+        out.close();
+
+    }
+
     private static void encryptFile(
             OutputStream out,
             String fileName,
@@ -774,22 +819,8 @@ public class Chat extends javax.swing.JFrame {
         String mensagem = "QUER CRIPTOGRAFIA CARALHO? TOMA CRIPTADA NA CARA";
         try {
             Security.addProvider(new BouncyCastleProvider());
-            /*
-            String outputFileName,
-            String inputFileName,
-            String encKeyFileName,
-            boolean armor,
-            boolean withIntegrityCheck)
-            */
-            encryptFile("arquivoCriptografado.txt", "arquivo.txt", "./dummy.asc",true,true);
-//            String resultado = new String(encrypt(mensagem, pbk), "UTF8");
-//            String resultado = new String(encrypt(mensagem.getBytes(), "Teste".toCharArray(), null, PGPEncryptedDataGenerator.AES_128, true), "UTF-8");
-       //     System.out.println(resultado);
-            //          String decrypta = new String(decrypt(resultado.getBytes(), "Teste".toCharArray()));
-         //   System.out.println(decrypta);
-
-            /*
-            = createRsaEncryptedObject(encryptionKey, mensagem.getBytes());*/
+            //encryptFile("arquivoCriptografado.txt", "arquivo.txt", "./dummy.asc", true, true);
+            encryptMessage("Mensagem de teste", "./dummy.asc", true, true);
         } catch (IOException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         } catch (PGPException ex) {
@@ -1044,7 +1075,6 @@ public class Chat extends javax.swing.JFrame {
      * @param cipherMode Cipher Mode
      * @throws Exception
      */
-
     /**
      * Decrypt file using 1024 RSA encryption
      *
