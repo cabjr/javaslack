@@ -24,9 +24,12 @@ import com.github.seratch.jslack.api.methods.response.im.ImOpenResponse;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ import javax.swing.event.ListSelectionListener;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
+import org.bouncycastle.bcpg.BCPGOutputStream;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
@@ -52,19 +56,40 @@ import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.openpgp.PGPEncryptedData;
+import org.bouncycastle.openpgp.PGPEncryptedDataGenerator;
+import org.bouncycastle.openpgp.PGPEncryptedDataList;
+import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPKeyPair;
 import org.bouncycastle.openpgp.PGPKeyRingGenerator;
+import org.bouncycastle.openpgp.PGPLiteralData;
+import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
+import org.bouncycastle.openpgp.PGPObjectFactory;
+import org.bouncycastle.openpgp.PGPOnePassSignature;
+import org.bouncycastle.openpgp.PGPOnePassSignatureList;
+import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSecretKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
+import org.bouncycastle.openpgp.PGPSignatureGenerator;
+import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPSignatureSubpacketGenerator;
+import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
 import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
+import org.bouncycastle.openpgp.operator.PublicKeyDataDecryptorFactory;
 import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPGPKeyPair;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
+import org.bouncycastle.openpgp.operator.jcajce.JcePGPDataEncryptorBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyDataDecryptorFactoryBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyKeyEncryptionMethodGenerator;
+import org.bouncycastle.util.io.Streams;
 import pt.ipb.ssi.chatslack.rtm.RTMRunnable;
 
 /**
@@ -230,6 +255,7 @@ public class Chat extends javax.swing.JFrame {
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem4 = new javax.swing.JMenuItem();
+        jMenuItem6 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Chat");
@@ -297,6 +323,14 @@ public class Chat extends javax.swing.JFrame {
 
         jMenuItem4.setText("Export Keys");
         jMenu2.add(jMenuItem4);
+
+        jMenuItem6.setText("Test Generated Keys");
+        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem6ActionPerformed(evt);
+            }
+        });
+        jMenu2.add(jMenuItem6);
 
         jMenuBar1.add(jMenu2);
 
@@ -422,6 +456,8 @@ public class Chat extends javax.swing.JFrame {
             pkr.encode(pubout);
             pubout.close();
             // Generate private key, dump to file.
+            // PGPSecretKeyRing privateKey = krgen.generateSecretKeyRing();
+
             PGPSecretKeyRing skr = krgen.generateSecretKeyRing();
             BufferedOutputStream secout = new BufferedOutputStream(new FileOutputStream("./dummy.skr"));
             skr.encode(secout);
@@ -441,14 +477,160 @@ public class Chat extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
+
+    }//GEN-LAST:event_jMenuItem6ActionPerformed
+
+    public static boolean
+            verifySignedObject(PGPPublicKey verifyingKey,
+                    byte[] pgpSignedData)
+            throws
+            PGPException, IOException {
+        JcaPGPObjectFactory pgpFact
+                = new JcaPGPObjectFactory(pgpSignedData);
+        PGPOnePassSignatureList onePassList = (PGPOnePassSignatureList) pgpFact.nextObject();
+        PGPOnePassSignature ops = onePassList.get(
+                0
+        );
+        PGPLiteralData literalData = (PGPLiteralData) pgpFact.nextObject();
+        InputStream dIn = literalData.getInputStream();
+        ops.init(
+                new JcaPGPContentVerifierBuilderProvider().setProvider(
+                        "BCFIPS"
+                ), verifyingKey);
+        int ch;
+        while ((ch = dIn.read())
+                >= 0) {
+            ops.update((byte) ch);
+        }
+        PGPSignatureList sigList = (PGPSignatureList) pgpFact.nextObject();
+        PGPSignature sig = sigList.get(
+                0
+        );
+        return ops.verify(sig);
+    }
+
+    public static byte[] createSignedObject(int signingAlg, PGPPrivateKey signingKey,
+            byte[] data)
+            throws
+            PGPException, IOException {
+        ByteArrayOutputStream bOut
+                = new ByteArrayOutputStream();
+        BCPGOutputStream bcOut
+                = new BCPGOutputStream(bOut);
+        PGPSignatureGenerator sGen
+                = new PGPSignatureGenerator(
+                        new JcaPGPContentSignerBuilder(
+                                signingAlg,
+                                PGPUtil.SHA384
+                        ).setProvider(
+                                "BCFIPS"
+                        ));
+        sGen.init(PGPSignature.BINARY_DOCUMENT,
+                signingKey);
+        sGen.generateOnePassVersion(
+                false
+        ).encode(bcOut);
+        PGPLiteralDataGenerator lGen
+                = new PGPLiteralDataGenerator();
+        OutputStream lOut = lGen.open(
+                bcOut,
+                PGPLiteralData.BINARY,
+                "_CONSOLE",
+                data.length,
+                new Date());
+        for (int i
+                = 0; i != data.length; i++) {
+            lOut.write(data[i]);
+            sGen.update(data[i]);
+        }
+        lGen.close();
+        sGen.generate().encode(bcOut);
+        return bOut.toByteArray();
+    }
+
+    public static byte[] createRsaEncryptedObject(PGPPublicKey encryptionKey,
+            byte[] data)
+            throws
+            PGPException, IOException {
+        ByteArrayOutputStream bOut
+                = new ByteArrayOutputStream();
+        PGPLiteralDataGenerator lData
+                = new PGPLiteralDataGenerator();
+        OutputStream pOut = lData.open(bOut,
+                PGPLiteralData.BINARY,
+                PGPLiteralData.CONSOLE,
+                data.length,
+                new Date());
+        pOut.write(data);
+        pOut.close();
+        byte[] plainText = bOut.toByteArray();
+        ByteArrayOutputStream encOut
+                = new ByteArrayOutputStream();
+        PGPEncryptedDataGenerator encGen
+                = new PGPEncryptedDataGenerator(
+                        new JcePGPDataEncryptorBuilder(
+                                SymmetricKeyAlgorithmTags.AES_256
+                        )
+                                .setWithIntegrityPacket(
+                                        true
+                                )
+                                .setSecureRandom(
+                                        new SecureRandom())
+                                .setProvider(
+                                        "BCFIPS"
+                                ));
+        encGen.addMethod(
+                new JcePublicKeyKeyEncryptionMethodGenerator(encryptionKey)
+                        .setProvider(
+                                "BCFIPS"
+                        ));
+        OutputStream cOut = encGen.open(encOut, plainText.length
+        );
+        cOut.write(plainText);
+        cOut.close();
+        return encOut.toByteArray();
+    }
+
+    public static byte[] extractRsaEncryptedObject(PGPPrivateKey privateKey,
+            byte[] pgpEncryptedData)
+            throws
+            PGPException, IOException {
+        PGPObjectFactory pgpFact
+                = new JcaPGPObjectFactory(pgpEncryptedData);
+        PGPEncryptedDataList encList = (PGPEncryptedDataList) pgpFact.nextObject();
+// note: we can only do this because we know we match the first encrypted data object
+        PGPPublicKeyEncryptedData encData = (PGPPublicKeyEncryptedData) encList.get(
+                0
+        );
+        PublicKeyDataDecryptorFactory dataDecryptorFactory
+                = new JcePublicKeyDataDecryptorFactoryBuilder()
+                        .setProvider(
+                                "BCFIPS"
+                        ).build(privateKey);
+        InputStream clear = encData.getDataStream(dataDecryptorFactory);
+        byte[] literalData = Streams.
+                readAll(clear);
+        if (encData.verify()) {
+            PGPObjectFactory litFact
+                    = new JcaPGPObjectFactory(literalData);
+            PGPLiteralData litData = (PGPLiteralData) litFact.nextObject();
+            byte[] data = Streams.
+                    readAll(litData.getInputStream());
+            return data;
+        }
+        throw new IllegalStateException(
+                "modification check failed"
+        );
+    }
+
     public final static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass) throws Exception {
         return generateKeyRingGenerator(id, pass, 0xc0);
     }
 
-    
     public final static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass, int s2kcount) throws Exception {
         // This object generates individual key-pairs.
-        RSAKeyPairGenerator  kpg = new RSAKeyPairGenerator();
+        RSAKeyPairGenerator kpg = new RSAKeyPairGenerator();
 
         // Boilerplate RSA parameters, no need to change anything
         // except for the RSA key-size (2048). You can use whatever key-size makes sense for you -- 4096, etc.
@@ -464,29 +646,26 @@ public class Chat extends javax.swing.JFrame {
 
         // Add signed metadata on the signature.
         // 1) Declare its purpose
-        signhashgen.setKeyFlags(false, KeyFlags.SIGN_DATA|KeyFlags.CERTIFY_OTHER);
+        signhashgen.setKeyFlags(false, KeyFlags.SIGN_DATA | KeyFlags.CERTIFY_OTHER);
         // 2) Set preferences for secondary crypto algorithms to use when sending messages to this key.
-        signhashgen.setPreferredSymmetricAlgorithms
-            (false, new int[] {
-                SymmetricKeyAlgorithmTags.AES_256,
-                SymmetricKeyAlgorithmTags.AES_192,
-                SymmetricKeyAlgorithmTags.AES_128
-            });
-        signhashgen.setPreferredHashAlgorithms
-            (false, new int[] {
-                HashAlgorithmTags.SHA256,
-                HashAlgorithmTags.SHA1,
-                HashAlgorithmTags.SHA384,
-                HashAlgorithmTags.SHA512,
-                HashAlgorithmTags.SHA224,
-            });
+        signhashgen.setPreferredSymmetricAlgorithms(false, new int[]{
+            SymmetricKeyAlgorithmTags.AES_256,
+            SymmetricKeyAlgorithmTags.AES_192,
+            SymmetricKeyAlgorithmTags.AES_128
+        });
+        signhashgen.setPreferredHashAlgorithms(false, new int[]{
+            HashAlgorithmTags.SHA256,
+            HashAlgorithmTags.SHA1,
+            HashAlgorithmTags.SHA384,
+            HashAlgorithmTags.SHA512,
+            HashAlgorithmTags.SHA224,});
         // 3) Request senders add additional checksums to the message (useful when verifying unsigned messages.)
         signhashgen.setFeature(false, Features.FEATURE_MODIFICATION_DETECTION);
 
         // Create a signature on the encryption subkey.
         PGPSignatureSubpacketGenerator enchashgen = new PGPSignatureSubpacketGenerator();
         // Add metadata to declare its purpose
-        enchashgen.setKeyFlags(false, KeyFlags.ENCRYPT_COMMS|KeyFlags.ENCRYPT_STORAGE);
+        enchashgen.setKeyFlags(false, KeyFlags.ENCRYPT_COMMS | KeyFlags.ENCRYPT_STORAGE);
 
         // Objects used to encrypt the secret key.
         PGPDigestCalculator sha1Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA1);
@@ -496,16 +675,16 @@ public class Chat extends javax.swing.JFrame {
         PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(PGPEncryptedData.AES_256, sha256Calc, s2kcount)).build(pass);
 
         // Finally, create the keyring itself. The constructor takes parameters that allow it to generate the self signature.
-        PGPKeyRingGenerator keyRingGen =
-            new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign,
-         id, sha1Calc, signhashgen.generate(), null,
-             new BcPGPContentSignerBuilder(rsakp_sign.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
+        PGPKeyRingGenerator keyRingGen
+                = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign,
+                        id, sha1Calc, signhashgen.generate(), null,
+                        new BcPGPContentSignerBuilder(rsakp_sign.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
 
         // Add our encryption subkey, together with its signature.
         keyRingGen.addSubKey(rsakp_enc, enchashgen.generate(), null);
         return keyRingGen;
     }
-    
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnviar;
     private javax.swing.JCheckBox jCheckBoxEncrypt;
@@ -521,6 +700,7 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
