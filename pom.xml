@@ -16,6 +16,16 @@
             <artifactId>jslack</artifactId>
             <version>1.1.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.c02e.jpgpj</groupId>
+            <artifactId>jpgpj</artifactId>
+            <version>0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk15on</artifactId>
+            <version>1.59</version>
+        </dependency>
     </dependencies>
     
 </project>
