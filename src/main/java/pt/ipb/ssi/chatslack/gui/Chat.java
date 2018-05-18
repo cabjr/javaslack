@@ -37,15 +37,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.SignatureException;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -61,6 +70,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.swing.DefaultListModel;
+import javax.swing.JOptionPane;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -118,9 +128,11 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyPair;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBEDataDecryptorFactoryBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBEKeyEncryptionMethodGenerator;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePGPDataEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyDataDecryptorFactoryBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyKeyEncryptionMethodGenerator;
@@ -482,36 +494,70 @@ public class Chat extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        ArmoredOutputStream pubout = null;
-        try {
-            char pass[] = {'h', 'e', 'l', 'l', 'o'};
-            PGPKeyRingGenerator krgen = generateKeyRingGenerator("alice@example.com", pass);
-            // Generate public key ring, dump to file.
-            PGPPublicKeyRing pkr = krgen.generatePublicKeyRing();
-            pubout = new ArmoredOutputStream(new BufferedOutputStream(new FileOutputStream("./dummy.asc")));
-            pkr.encode(pubout);
-            pubout.close();
-            // Generate private key, dump to file.
-            // PGPSecretKeyRing privateKey = krgen.generateSecretKeyRing();
+        Security.addProvider(new BouncyCastleProvider());
 
-            PGPSecretKeyRing skr = krgen.generateSecretKeyRing();
-            BufferedOutputStream secout = new BufferedOutputStream(new FileOutputStream("./dummy.skr"));
-            skr.encode(secout);
-            secout.close();
+        KeyPairGenerator kpg;
+        try {
+            kpg = KeyPairGenerator.getInstance("RSA", "BC");
+
+            kpg.initialize(1024);
+
+            KeyPair kp = kpg.generateKeyPair();
+
+            FileOutputStream out1 = new FileOutputStream("privada.asc");
+            FileOutputStream out2 = new FileOutputStream("publica.asc");
+
+            exportKeyPair(out1, out2, kp, "carlos@gmail.com", "senha".toCharArray(), true);
+
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchProviderException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (Exception ex) {
+        } catch (PGPException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                pubout.close();
-            } catch (IOException ex) {
-                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SignatureException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+
     }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private static void exportKeyPair(
+            OutputStream secretOut,
+            OutputStream publicOut,
+            KeyPair pair,
+            String identity,
+            char[] passPhrase,
+            boolean armor)
+            throws IOException, InvalidKeyException, NoSuchProviderException, SignatureException, PGPException {
+        if (armor) {
+            secretOut = new ArmoredOutputStream(secretOut);
+        }
+
+        PGPDigestCalculator sha1Calc = new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA1);
+        PGPKeyPair keyPair = new JcaPGPKeyPair(PGPPublicKey.RSA_GENERAL, pair, new Date());
+        PGPSecretKey secretKey = new PGPSecretKey(PGPSignature.DEFAULT_CERTIFICATION, keyPair, identity, sha1Calc, null, null, new JcaPGPContentSignerBuilder(keyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), new JcePBESecretKeyEncryptorBuilder(PGPEncryptedData.CAST5, sha1Calc).setProvider("BC").build(passPhrase));
+
+        secretKey.encode(secretOut);
+
+        secretOut.close();
+
+        if (armor) {
+            publicOut = new ArmoredOutputStream(publicOut);
+        }
+
+        PGPPublicKey key = secretKey.getPublicKey();
+
+        key.encode(publicOut);
+
+        publicOut.close();
+    }
 
     private static void decryptFile(
             String inputFileName,
@@ -742,41 +788,45 @@ public class Chat extends javax.swing.JFrame {
         return bos;
     }
 
-    private static void encryptMessage(String mensagem, String nomeChave, boolean armor, boolean withIntegrityCheck) throws IOException, PGPException {
+    static String readFile(String path, Charset encoding)
+            throws IOException {
+        byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, encoding);
+    }
+
+    private static String decryptMessage(
+            String mensagemEncryptada,
+            String keyFileName,
+            char[] passwd)
+            throws IOException, NoSuchProviderException {
+        try (PrintWriter saida = new PrintWriter("./tmp.txt")) {
+            saida.println(mensagemEncryptada);
+        }
+        InputStream in = new BufferedInputStream(new FileInputStream("./tmp.txt"));
+        InputStream keyIn = new BufferedInputStream(new FileInputStream(keyFileName));
+        decryptFile(in, keyIn, passwd, "./out.txt");
+        keyIn.close();
+        in.close();
+        String result = readFile("./tmp.txt", Charset.defaultCharset());
+        new File("./out.txt").delete();
+        new File("./tmp.txt").delete();
+        return result;
+    }
+
+    private static String encryptMessage(String mensagem, String nomeChave, boolean armor, boolean withIntegrityCheck) throws IOException, PGPException, NoSuchProviderException {
+        OutputStream out = new BufferedOutputStream(new FileOutputStream("./out.txt"));
+        try (PrintWriter saida = new PrintWriter("./tmp.txt")) {
+            saida.println(mensagem);
+        }
+
         PGPPublicKey encKey = readPublicKey(nomeChave);
-        OutputStream out;
-        out = convertStringtoStream(mensagem);
-        if (armor) {
-            out = new ArmoredOutputStream(out);
-        }
-
-        try {
-            byte[] bytes = mensagem.getBytes();
-
-            PGPEncryptedDataGenerator encGen = new PGPEncryptedDataGenerator(
-                    new JcePGPDataEncryptorBuilder(PGPEncryptedData.CAST5).setWithIntegrityPacket(withIntegrityCheck).setSecureRandom(new SecureRandom()).setProvider("BC"));
-
-            encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(encKey).setProvider("BC"));
-
-            OutputStream cOut = encGen.open(out, bytes.length);
-
-            cOut.write(bytes);
-            cOut.close();
-
-            System.out.println(cOut.toString());
-
-            if (armor) {
-                out.close();
-            }
-        } catch (PGPException e) {
-            System.err.println(e);
-            if (e.getUnderlyingException() != null) {
-                e.getUnderlyingException().printStackTrace();
-            }
-        }
-
+        encryptFile(out, "./tmp.txt", encKey, armor, withIntegrityCheck);
         out.close();
-
+        String result = readFile("./out.txt", Charset.defaultCharset());
+        new File("./out.txt").delete();
+        new File("./tmp.txt").delete();
+        System.out.println(result);
+        return result;
     }
 
     private static void encryptFile(
@@ -820,7 +870,19 @@ public class Chat extends javax.swing.JFrame {
         try {
             Security.addProvider(new BouncyCastleProvider());
             //encryptFile("arquivoCriptografado.txt", "arquivo.txt", "./dummy.asc", true, true);
-            encryptMessage("Mensagem de teste", "./dummy.asc", true, true);
+            encryptMessage("Mensagem de teste", "./publica.asc", true, true);
+
+            String teste = decryptMessage("-----BEGIN PGP MESSAGE-----\n"
+                    + "Version: BCPG v1.59\n"
+                    + "\n"
+                    + "hIwDqJyWaMHWEKYBBADBNLhS8pKbv1sbjGMtJMsKPA7njnwKF1vGn2X7sXOE8XQn\n"
+                    + "vy3K54JlLKeZ+rRtO3G2ekQZhCxJA2ztNsCzquNO8Z0GbL3q8LbB/MQ9cv/oYEnN\n"
+                    + "/4gW6Yu+qo43/G7FwDbM2R9DSdFtUlglZqMrCctRl3ZVCf1Nn2Ucsk4jqmfShtJa\n"
+                    + "AZ/CUq/mizpUHlbL6pPQtwQ/pt/lJZb+TNV3PRCtB0VXxBL2opuTNGRDrP9TT+pS\n"
+                    + "5GU7zdBytLpO9CJmHBrVMgRaFlbDSYg+tMZCX2mdohDX/9UUapWITWKC\n"
+                    + "=d7cG\n"
+                    + "-----END PGP MESSAGE-----", "./privada.asc", "senha".toCharArray());
+            JOptionPane.showMessageDialog(this, teste);
         } catch (IOException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         } catch (PGPException ex) {
@@ -1085,10 +1147,6 @@ public class Chat extends javax.swing.JFrame {
      * @param cipherMode Cipher Mode
      * @throws Exception
      */
-    public static void decryptFile(String srcFileName, String destFileName, PrivateKey key) throws Exception {
-        encryptDecryptFile(srcFileName, destFileName, key, Cipher.DECRYPT_MODE);
-    }
-
     /**
      * Encrypt and Decrypt files using 1024 RSA encryption
      *
@@ -1099,48 +1157,6 @@ public class Chat extends javax.swing.JFrame {
      * @param cipherMode Cipher Mode
      * @throws Exception
      */
-    public static void encryptDecryptFile(String srcFileName, String destFileName, Key key, int cipherMode) throws Exception {
-        OutputStream outputWriter = null;
-        InputStream inputReader = null;
-        try {
-            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-            String textLine = null;
-            //RSA encryption data size limitations are slightly less than the key modulus size,
-            //depending on the actual padding scheme used (e.g. with 1024 bit (128 byte) RSA key,
-            //the size limit is 117 bytes for PKCS#1 v 1.5 padding. (http://www.jensign.com/JavaScience/dotnet/RSAEncrypt/)
-            byte[] buf = cipherMode == Cipher.ENCRYPT_MODE ? new byte[100] : new byte[128];
-            int bufl;
-            // init the Cipher object for Encryption...
-            cipher.init(cipherMode, key);
-
-            // start FileIO
-            outputWriter = new FileOutputStream(destFileName);
-            inputReader = new FileInputStream(srcFileName);
-            while ((bufl = inputReader.read(buf)) != -1) {
-                byte[] encText = null;
-                if (cipherMode == Cipher.ENCRYPT_MODE) {
-                    encText = encrypt(copyBytes(buf, bufl), (PublicKey) key);
-                } else {
-                    encText = decrypt(copyBytes(buf, bufl), (PrivateKey) key);
-                }
-                outputWriter.write(encText);
-            }
-            outputWriter.flush();
-
-        } finally {
-            try {
-                if (outputWriter != null) {
-                    outputWriter.close();
-                }
-                if (inputReader != null) {
-                    inputReader.close();
-                }
-            } catch (Exception e) {
-                // do nothing...
-            } // end of inner try, catch (Exception)...
-        }
-    }
-
     public static byte[] copyBytes(byte[] arr, int length) {
         byte[] newArr = null;
         if (arr.length == length) {
