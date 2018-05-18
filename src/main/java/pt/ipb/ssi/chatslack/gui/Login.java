@@ -25,8 +25,8 @@ public class Login extends javax.swing.JFrame {
      */
     public Login() {
         initComponents();
-        txtToken.setText("xoxp-353804391270-353047442645-366797798246-29cbe85f7926dd7727dea1ca5148662e");
-        txtBotUserToken.setText("xoxb-353804391270-365361411697-hRufgIFBtPBU1rEoBIgL5iaR");
+        txtToken.setText("xoxp-353804391270-352655713073-354162492966-bcbf0e04ed28e154e7e939d14ddd3f42");
+        txtBotUserToken.setText("xoxb-353405684213-gVzzTC72SzkGPzoPfjIO7RHE");
         //txtToken.setText("xoxb-353804391270-365674326627-nTHUsMk7IA5ZwA4EUYtFocPT");
     }
 
@@ -119,8 +119,11 @@ public class Login extends javax.swing.JFrame {
                 if (responseBotUserToken.isOk()) {
                     // Caso teve sucesso na validação com o token
                     // Abre a janela do chat
-                    new Chat(botUserToken, token).setVisible(true);
-                    setVisible(false);
+                    Chat janela = new Chat(botUserToken, token);
+                    janela.setVisible(true);
+                    this.setVisible(false);
+                  /*  new Chat(botUserToken, token).setVisible(true);
+                    setVisible(false);*/
 
                 } else {
                     JOptionPane.showMessageDialog(null, "Erro ao acessar o Slack com o Bot User OAuth Access Token");

@@ -10,12 +10,16 @@ import com.github.seratch.jslack.api.methods.SlackApiException;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
 import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
+import com.github.seratch.jslack.api.methods.request.conversations.ConversationsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.im.ImHistoryRequest;
+import com.github.seratch.jslack.api.methods.request.im.ImListRequest;
 import com.github.seratch.jslack.api.methods.request.im.ImOpenRequest;
 import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
 import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
 import com.github.seratch.jslack.api.methods.response.chat.ChatPostMessageResponse;
+import com.github.seratch.jslack.api.methods.response.conversations.ConversationsHistoryResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImHistoryResponse;
+import com.github.seratch.jslack.api.methods.response.im.ImListResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImOpenResponse;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
@@ -95,31 +99,32 @@ public class Chat extends javax.swing.JFrame {
             txtMsgRecebida.setText("");
             //Abre um canal para aquele usuario
             // Scope: 	bot, user: im:write post
-            ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(userID).token(token).build());
-            if (canal.getChannel().getId() != null) {
-                ImHistoryResponse history = slack.methods().imHistory(
-                        ImHistoryRequest.builder()
-                                .channel(canal.getChannel().getId())
-                                .token(token)
-                                .count(1000)
-                                .build());
-                System.out.println("history " + history);
-                if (history.getMessages() != null) {
-                    for (int i = history.getMessages().size() - 1; i >= 0; i--) {
-                        if (history.getMessages().get(i).getUsername() != null) {
-                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                        } else if (history.getMessages().get(i).getText().contains("<@")) {
+            //
+            ImHistoryResponse history;
+            ImListResponse list = slack.methods().imList(ImListRequest.builder().token(token).build());
+            if (list.getIms().size() > 0) {
 
-                            /*String pieces[] = history.getMessages().get(i).getText().split(">");
-                        String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
-                        System.out.println(name);*/
-                            txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+                history = slack.methods().imHistory(ImHistoryRequest.builder().token(token).channel(list.getIms().get(0).getId()).build());
+            } else {
+                ImOpenResponse channelID = slack.methods().imOpen(ImOpenRequest.builder().token(token).user(userID).build());
+                System.out.println(channelID);
+                System.out.println(channelID.getChannel().getId());
+                history = slack.methods().imHistory(ImHistoryRequest.builder().token(token).channel(channelID.getChannel().getId()).build());
+            }
 
-                        } else {
-                            txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
-                        }
+            System.out.println("history " + history);
+            if (history.getMessages() != null) {
+                for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                    if (history.getMessages().get(i).getUsername() != null) {
+                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
+                    } else if (history.getMessages().get(i).getText().contains("<@")) {
+                        txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+
+                    } else {
+                        txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
                     }
                 }
+                // }
             }
         } catch (IOException | SlackApiException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
@@ -135,6 +140,7 @@ public class Chat extends javax.swing.JFrame {
                     .getChannels().listIterator();
             while (channels.hasNext()) {
                 Channel canal = channels.next();
+                System.out.println(canal);
                 if (canal != null) {
                     canais.add(canal);
                 }
@@ -287,28 +293,22 @@ public class Chat extends javax.swing.JFrame {
 
             }
         } else {
-            try {
-                ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(usuarioMap.get(listDM.getSelectedValue())).token(token).build());
-                if (canal.getChannel().getId() != null) {
-                    if (!txtMsgEnviar.getText().isEmpty()) {
-                        String channelID = canal.getChannel().getId();
-                        String mensagem = txtMsgEnviar.getText();
-                        System.out.println("Chanel " + channelID + " msg " + mensagem);
-                        ChatPostMessageResponse test = slack.methods().chatPostMessage(
-                                ChatPostMessageRequest.builder()
-                                .text(mensagem)
-                                .token(token)
-                                .channel(channelID)
-                                .build()
-                        );
-                        System.out.println("test  " + test);
-                        setDMChatHistory(usuarioMap.get(listDM.getSelectedValue()));
-                        txtMsgEnviar.setText("");
+            if (!txtMsgEnviar.getText().isEmpty()) {
+                String channel = "";
+                String userName = listDM.getSelectedValue();
+                System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
+                channel = usuarioMap.get(userName);
+                String mensagem = txtMsgEnviar.getText();
 
-                    }
+                try {
+                    slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channel).build());
+                } catch (IOException ex) {
+                    Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SlackApiException ex) {
+                    Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (IOException | SlackApiException ex) {
-                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                setDMChatHistory(usuarioMap.get(userName).toString());
+                txtMsgEnviar.setText("");
             }
         }
     }//GEN-LAST:event_btnEnviarActionPerformed
@@ -335,35 +335,37 @@ public class Chat extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private void setChatHistory() {
-        try {
-            txtMsgRecebida.setText("");
-            String channelID = canais.get(CanalAtual).getId();
-            System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(botUserToken).build()).getMessages());
-            ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
-                    .token(token)
-                    .channel(channelID)
-                    .count(1000)
-                    .build());
-            System.out.println(channelID);
-            System.out.println(history);
-            if (history.getMessages() != null) {
-                for (int i = history.getMessages().size() - 1; i >= 0; i--) {
-                    if (history.getMessages().get(i).getUsername() != null) {
-                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                    } else if (history.getMessages().get(i).getText().contains("<@")) {
+        if (listCanais.getSelectedIndex() != -1) {
+            try {
+                txtMsgRecebida.setText("");
+                String channelID = canais.get(CanalAtual).getId();
+                System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(botUserToken).build()).getMessages());
+                ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
+                        .token(token)
+                        .channel(channelID)
+                        .count(1000)
+                        .build());
+                System.out.println(channelID);
+                System.out.println(history);
+                if (history.getMessages() != null) {
+                    for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                        if (history.getMessages().get(i).getUsername() != null) {
+                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
+                        } else if (history.getMessages().get(i).getText().contains("<@")) {
 
-                        /*String pieces[] = history.getMessages().get(i).getText().split(">");
+                            /*String pieces[] = history.getMessages().get(i).getText().split(">");
                         String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
                         System.out.println(name);*/
-                        txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+                            txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
 
-                    } else {
-                        txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                        } else {
+                            txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                        }
                     }
                 }
+            } catch (IOException | SlackApiException ex) {
+                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } catch (IOException | SlackApiException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
