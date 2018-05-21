@@ -471,6 +471,16 @@ public class Chat extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    public void limpaCampo()
+    {
+        txtMsgEnviar.setText("");
+    }
+    
+    public String getMensagem()
+    {
+        return txtMsgEnviar.getText();
+    }
+            
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
         // Clique no botão de enviar
         if (listCanais.getSelectedIndex() != -1) {
@@ -479,9 +489,15 @@ public class Chat extends javax.swing.JFrame {
             if (!txtMsgEnviar.getText().isEmpty()) {
                 String mensagem = txtMsgEnviar.getText();
                 try {
-                    System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("Bot com nick que eu quiser").token(token).channel(channelID).build()));
-                    setChatHistory();
-                    txtMsgEnviar.setText("");
+                    if (jCheckBoxEncrypt.isSelected()) {
+                        SelectPublicKey window = new SelectPublicKey(this, usuarioMap);
+                        window.setVisible(true);
+                        
+                    } else {
+                        System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("Bot com nick que eu quiser").token(token).channel(channelID).build()));
+                        setChatHistory();
+                        txtMsgEnviar.setText("");
+                    }
 
                 } catch (IOException ex) {
                     Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
@@ -868,7 +884,7 @@ public class Chat extends javax.swing.JFrame {
         return result;
     }
 
-    private static String encryptMessage(String mensagem, String nomeChave, boolean armor, boolean withIntegrityCheck) throws IOException, PGPException, NoSuchProviderException {
+    public static String encryptMessage(String mensagem, String nomeChave, boolean armor, boolean withIntegrityCheck) throws IOException, PGPException, NoSuchProviderException {
         OutputStream out = new BufferedOutputStream(new FileOutputStream("./out.txt"));
         try (PrintWriter saida = new PrintWriter("./tmp.txt")) {
             saida.println(mensagem);
@@ -1428,7 +1444,7 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JTextArea txtMsgRecebida;
     // End of variables declaration//GEN-END:variables
 
-    private void setChatHistory() {
+    public void setChatHistory() {
         if (listCanais.getSelectedIndex() != -1) {
             try {
                 txtMsgRecebida.setText("");
@@ -1466,5 +1482,11 @@ public class Chat extends javax.swing.JFrame {
     private void setRTM() {
         Thread thread = new Thread(new RTMRunnable(slack, token));
         thread.start();
+    }
+    
+    
+    public String getValueListDm()
+    {
+        return listDM.getSelectedValue();
     }
 }
