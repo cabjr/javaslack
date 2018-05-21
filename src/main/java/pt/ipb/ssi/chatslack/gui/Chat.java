@@ -66,12 +66,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -198,6 +202,26 @@ public class Chat extends javax.swing.JFrame {
 
         });
         new File("./public_keys").mkdirs();
+
+        /*SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        if (listCanais.getSelectedIndex() != -1) {
+                            setChatHistory();
+                        } else {
+                            String userName = listDM.getSelectedValue();
+                            setDMChatHistory(usuarioMap.get(userName));
+                        }
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+
+            }
+        });*/
     }
 
     private void setDMChatHistory(String userID) {
@@ -224,6 +248,10 @@ public class Chat extends javax.swing.JFrame {
                     if (history.getMessages().get(i).getUsername() != null) {
                         txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
                     } else if (history.getMessages().get(i).getText().contains("<@")) {
+
+                        /*String pieces[] = history.getMessages().get(i).getText().split(">");
+                        String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
+                        System.out.println(name);*/
                         txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
 
                     } else {
@@ -285,8 +313,6 @@ public class Chat extends javax.swing.JFrame {
         jMenuBar2 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
         jMenu4 = new javax.swing.JMenu();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txtMsgRecebida = new javax.swing.JTextArea();
         txtMsgEnviar = new javax.swing.JTextField();
         btnEnviar = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
@@ -300,6 +326,8 @@ public class Chat extends javax.swing.JFrame {
         listApps = new javax.swing.JList<>();
         jCheckBoxEncrypt = new javax.swing.JCheckBox();
         jCheckBoxSign = new javax.swing.JCheckBox();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtMsgRecebida = new javax.swing.JTextArea();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
@@ -320,11 +348,6 @@ public class Chat extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Chat");
-
-        txtMsgRecebida.setEditable(false);
-        txtMsgRecebida.setColumns(20);
-        txtMsgRecebida.setRows(5);
-        jScrollPane1.setViewportView(txtMsgRecebida);
 
         btnEnviar.setText("Enviar");
         btnEnviar.addActionListener(new java.awt.event.ActionListener() {
@@ -353,6 +376,11 @@ public class Chat extends javax.swing.JFrame {
         jCheckBoxEncrypt.setText("Encrypt");
 
         jCheckBoxSign.setText("Sign");
+
+        txtMsgRecebida.setEditable(false);
+        txtMsgRecebida.setColumns(20);
+        txtMsgRecebida.setRows(5);
+        jScrollPane1.setViewportView(txtMsgRecebida);
 
         jMenu1.setText("File");
 
@@ -415,12 +443,8 @@ public class Chat extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jCheckBoxSign)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jCheckBoxEncrypt, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 142, Short.MAX_VALUE)
                             .addComponent(jLabel1)
@@ -428,29 +452,28 @@ public class Chat extends javax.swing.JFrame {
                             .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                             .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                             .addComponent(jLabel3))
-                        .addGap(46, 46, 46)
+                        .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(txtMsgEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, 383, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtMsgEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, 411, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnEnviar))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 449, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(31, Short.MAX_VALUE))
+                                .addComponent(btnEnviar)
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addComponent(jScrollPane1)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jCheckBoxSign)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jCheckBoxEncrypt, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 343, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtMsgEnviar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnEnviar, javax.swing.GroupLayout.Alignment.TRAILING)))
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel2)
@@ -459,28 +482,32 @@ public class Chat extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel3)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtMsgEnviar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnEnviar, javax.swing.GroupLayout.Alignment.TRAILING))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jCheckBoxEncrypt)
                     .addComponent(jCheckBoxSign))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    public void limpaCampo()
-    {
+    public void limpaCampo() {
         txtMsgEnviar.setText("");
     }
-    
-    public String getMensagem()
-    {
+
+    public String getMensagem() {
         return txtMsgEnviar.getText();
     }
-            
+
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
         // Clique no botão de enviar
         if (listCanais.getSelectedIndex() != -1) {
@@ -492,7 +519,7 @@ public class Chat extends javax.swing.JFrame {
                     if (jCheckBoxEncrypt.isSelected()) {
                         SelectPublicKey window = new SelectPublicKey(this, usuarioMap);
                         window.setVisible(true);
-                        
+
                     } else {
                         System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("Bot com nick que eu quiser").token(token).channel(channelID).build()));
                         setChatHistory();
@@ -1456,7 +1483,7 @@ public class Chat extends javax.swing.JFrame {
                         .count(1000)
                         .build());
                 System.out.println(channelID);
-                //System.out.println(history);
+                System.out.println(history);
                 if (history.getMessages() != null) {
                     for (int i = history.getMessages().size() - 1; i >= 0; i--) {
                         if (history.getMessages().get(i).getUsername() != null) {
@@ -1483,10 +1510,8 @@ public class Chat extends javax.swing.JFrame {
         Thread thread = new Thread(new RTMRunnable(slack, token));
         thread.start();
     }
-    
-    
-    public String getValueListDm()
-    {
+
+    public String getValueListDm() {
         return listDM.getSelectedValue();
     }
 }
