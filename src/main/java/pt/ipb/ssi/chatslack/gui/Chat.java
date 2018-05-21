@@ -165,6 +165,7 @@ public class Chat extends javax.swing.JFrame {
      */
     public Chat(String botUserToken, String token) {
         initComponents();
+        Security.addProvider(new BouncyCastleProvider());
         this.slack = Slack.getInstance();
         this.botUserToken = botUserToken;
         this.token = token;
@@ -196,7 +197,7 @@ public class Chat extends javax.swing.JFrame {
             }
 
         });
-
+        new File("./public_keys").mkdirs();
     }
 
     private void setDMChatHistory(String userID) {
@@ -217,7 +218,7 @@ public class Chat extends javax.swing.JFrame {
                 history = slack.methods().imHistory(ImHistoryRequest.builder().token(token).channel(channelID.getChannel().getId()).build());
             }
 
-            System.out.println("history " + history);
+            //System.out.println("history " + history);
             if (history.getMessages() != null) {
                 for (int i = history.getMessages().size() - 1; i >= 0; i--) {
                     if (history.getMessages().get(i).getUsername() != null) {
@@ -308,6 +309,8 @@ public class Chat extends javax.swing.JFrame {
         jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenuItem6 = new javax.swing.JMenuItem();
+        jMenu5 = new javax.swing.JMenu();
+        jMenuItem7 = new javax.swing.JMenuItem();
 
         jMenu3.setText("File");
         jMenuBar2.add(jMenu3);
@@ -392,6 +395,18 @@ public class Chat extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu2);
 
+        jMenu5.setText("User");
+
+        jMenuItem7.setText("Add Public Key");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem7ActionPerformed(evt);
+            }
+        });
+        jMenu5.add(jMenuItem7);
+
+        jMenuBar1.add(jMenu5);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -467,6 +482,7 @@ public class Chat extends javax.swing.JFrame {
                     System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("Bot com nick que eu quiser").token(token).channel(channelID).build()));
                     setChatHistory();
                     txtMsgEnviar.setText("");
+
                 } catch (IOException ex) {
                     Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (SlackApiException ex) {
@@ -481,16 +497,31 @@ public class Chat extends javax.swing.JFrame {
                 System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
                 channel = usuarioMap.get(userName);
                 String mensagem = txtMsgEnviar.getText();
-
                 try {
-                    slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channel).build());
+                    if (jCheckBoxEncrypt.isSelected()) {
+                        System.out.println("./public_keys/" + usuarioMap.get(userName) + ".asc");
+                        if (new File("./public_keys/" + usuarioMap.get(userName) + ".asc").exists()) {
+                            System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(encryptMessage(mensagem, "./public_keys/" + usuarioMap.get(userName) + ".asc", true, true)).username("BotRandom").token(token).channel(channel).build()));
+                            setChatHistory();
+                            txtMsgEnviar.setText("");
+                        } else {
+                            JOptionPane.showMessageDialog(this, "You dont have the public key of this user registered!");
+                        }
+                    } else {
+                        slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(true).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channel).build());
+                        setDMChatHistory(usuarioMap.get(userName).toString());
+                        txtMsgEnviar.setText("");
+                    }
                 } catch (IOException ex) {
                     Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (SlackApiException ex) {
                     Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (PGPException ex) {
+                    Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (NoSuchProviderException ex) {
+                    Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                setDMChatHistory(usuarioMap.get(userName).toString());
-                txtMsgEnviar.setText("");
+
             }
         }
     }//GEN-LAST:event_btnEnviarActionPerformed
@@ -900,7 +931,7 @@ public class Chat extends javax.swing.JFrame {
                     JOptionPane.WARNING_MESSAGE
             );
             String encriptada = encryptMessage(mensagem, "./publica.asc", true, true);
-            JOptionPane.showMessageDialog(this, "Encrypted message:\n"+ encriptada);
+            JOptionPane.showMessageDialog(this, "Encrypted message:\n" + encriptada);
             String password = JOptionPane.showInputDialog(
                     this,
                     "Enter the secret code to your key",
@@ -909,10 +940,8 @@ public class Chat extends javax.swing.JFrame {
             );
             String teste = decryptMessage(encriptada, "./privada.asc", password.toCharArray());
             if (teste != null) {
-                JOptionPane.showMessageDialog(this, "Decrypted message: \n"+teste);
-            }
-            else
-            {
+                JOptionPane.showMessageDialog(this, "Decrypted message: \n" + teste);
+            } else {
                 JOptionPane.showMessageDialog(this, "Key or password incorrect!");
             }
         } catch (IOException ex) {
@@ -924,6 +953,11 @@ public class Chat extends javax.swing.JFrame {
         }
 
     }//GEN-LAST:event_jMenuItem6ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        UsersPublicKey window = new UsersPublicKey(usuarioMap);
+        window.setVisible(true);
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
 
     public PGPPublicKey getPublicKey(String dir) throws IOException, PGPException {
 
@@ -1373,6 +1407,7 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
+    private javax.swing.JMenu jMenu5;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuBar jMenuBar2;
     private javax.swing.JMenuItem jMenuItem1;
@@ -1381,6 +1416,7 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
@@ -1404,7 +1440,7 @@ public class Chat extends javax.swing.JFrame {
                         .count(1000)
                         .build());
                 System.out.println(channelID);
-                System.out.println(history);
+                //System.out.println(history);
                 if (history.getMessages() != null) {
                     for (int i = history.getMessages().size() - 1; i >= 0; i--) {
                         if (history.getMessages().get(i).getUsername() != null) {
