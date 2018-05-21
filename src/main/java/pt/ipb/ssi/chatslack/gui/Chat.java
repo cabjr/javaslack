@@ -70,6 +70,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.swing.DefaultListModel;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -280,6 +281,9 @@ public class Chat extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jMenuBar2 = new javax.swing.JMenuBar();
+        jMenu3 = new javax.swing.JMenu();
+        jMenu4 = new javax.swing.JMenu();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtMsgRecebida = new javax.swing.JTextArea();
         txtMsgEnviar = new javax.swing.JTextField();
@@ -304,6 +308,12 @@ public class Chat extends javax.swing.JFrame {
         jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenuItem6 = new javax.swing.JMenuItem();
+
+        jMenu3.setText("File");
+        jMenuBar2.add(jMenu3);
+
+        jMenu4.setText("Edit");
+        jMenuBar2.add(jMenu4);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Chat");
@@ -494,6 +504,19 @@ public class Chat extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        String password = JOptionPane.showInputDialog(
+                this,
+                "Enter the secret code to your key",
+                "Secret code needed",
+                JOptionPane.WARNING_MESSAGE
+        );
+        String email = JOptionPane.showInputDialog(
+                this,
+                "Enter your e-mail:",
+                "E-mail needed",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
         Security.addProvider(new BouncyCastleProvider());
 
         KeyPairGenerator kpg;
@@ -507,7 +530,8 @@ public class Chat extends javax.swing.JFrame {
             FileOutputStream out1 = new FileOutputStream("privada.asc");
             FileOutputStream out2 = new FileOutputStream("publica.asc");
 
-            exportKeyPair(out1, out2, kp, "carlos@gmail.com", "senha".toCharArray(), true);
+            exportKeyPair(out1, out2, kp, email, password.toCharArray(), true);
+            JOptionPane.showMessageDialog(this, "Keys were generated and saved on the directory of this application!");
 
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
@@ -866,23 +890,31 @@ public class Chat extends javax.swing.JFrame {
 
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
-        String mensagem = "QUER CRIPTOGRAFIA CARALHO? TOMA CRIPTADA NA CARA";
         try {
             Security.addProvider(new BouncyCastleProvider());
             //encryptFile("arquivoCriptografado.txt", "arquivo.txt", "./dummy.asc", true, true);
-            encryptMessage("Mensagem de teste", "./publica.asc", true, true);
-
-            String teste = decryptMessage("-----BEGIN PGP MESSAGE-----\n"
-                    + "Version: BCPG v1.59\n"
-                    + "\n"
-                    + "hIwDqJyWaMHWEKYBBADBNLhS8pKbv1sbjGMtJMsKPA7njnwKF1vGn2X7sXOE8XQn\n"
-                    + "vy3K54JlLKeZ+rRtO3G2ekQZhCxJA2ztNsCzquNO8Z0GbL3q8LbB/MQ9cv/oYEnN\n"
-                    + "/4gW6Yu+qo43/G7FwDbM2R9DSdFtUlglZqMrCctRl3ZVCf1Nn2Ucsk4jqmfShtJa\n"
-                    + "AZ/CUq/mizpUHlbL6pPQtwQ/pt/lJZb+TNV3PRCtB0VXxBL2opuTNGRDrP9TT+pS\n"
-                    + "5GU7zdBytLpO9CJmHBrVMgRaFlbDSYg+tMZCX2mdohDX/9UUapWITWKC\n"
-                    + "=d7cG\n"
-                    + "-----END PGP MESSAGE-----", "./privada.asc", "senha".toCharArray());
-            JOptionPane.showMessageDialog(this, teste);
+            String mensagem = JOptionPane.showInputDialog(
+                    this,
+                    "Enter the message to be encrypted using your public key:",
+                    "Message needed",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            String encriptada = encryptMessage(mensagem, "./publica.asc", true, true);
+            JOptionPane.showMessageDialog(this, "Encrypted message:\n"+ encriptada);
+            String password = JOptionPane.showInputDialog(
+                    this,
+                    "Enter the secret code to your key",
+                    "Secret code needed",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            String teste = decryptMessage(encriptada, "./privada.asc", password.toCharArray());
+            if (teste != null) {
+                JOptionPane.showMessageDialog(this, "Decrypted message: \n"+teste);
+            }
+            else
+            {
+                JOptionPane.showMessageDialog(this, "Key or password incorrect!");
+            }
         } catch (IOException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         } catch (PGPException ex) {
@@ -1339,7 +1371,10 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenu jMenu3;
+    private javax.swing.JMenu jMenu4;
     private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JMenuBar jMenuBar2;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
