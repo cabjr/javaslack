@@ -241,7 +241,7 @@ public class Chat extends javax.swing.JFrame {
                 System.out.println(channelID.getChannel().getId());
                 history = slack.methods().imHistory(ImHistoryRequest.builder().token(token).channel(channelID.getChannel().getId()).build());
             }
-            String password=null;
+            String password = null;
             //System.out.println("history " + history);
             if (history.getMessages() != null) {
                 for (int i = history.getMessages().size() - 1; i >= 0; i--) {
@@ -336,15 +336,11 @@ public class Chat extends javax.swing.JFrame {
         btnEnviar = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         listCanais = new javax.swing.JList<>();
         jScrollPane3 = new javax.swing.JScrollPane();
         listDM = new javax.swing.JList<>();
-        jScrollPane4 = new javax.swing.JScrollPane();
-        listApps = new javax.swing.JList<>();
         jCheckBoxEncrypt = new javax.swing.JCheckBox();
-        jCheckBoxSign = new javax.swing.JCheckBox();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtMsgRecebida = new javax.swing.JTextArea();
         jMenuBar1 = new javax.swing.JMenuBar();
@@ -353,6 +349,7 @@ public class Chat extends javax.swing.JFrame {
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
+        jMenuItem8 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenuItem6 = new javax.swing.JMenuItem();
@@ -379,8 +376,6 @@ public class Chat extends javax.swing.JFrame {
 
         jLabel2.setText("DM");
 
-        jLabel3.setText("Apps");
-
         listCanais.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
             public void propertyChange(java.beans.PropertyChangeEvent evt) {
                 listCanaisPropertyChange(evt);
@@ -390,11 +385,7 @@ public class Chat extends javax.swing.JFrame {
 
         jScrollPane3.setViewportView(listDM);
 
-        jScrollPane4.setViewportView(listApps);
-
-        jCheckBoxEncrypt.setText("Encrypt");
-
-        jCheckBoxSign.setText("Sign");
+        jCheckBoxEncrypt.setText("Encrypt & Sign");
 
         txtMsgRecebida.setEditable(false);
         txtMsgRecebida.setColumns(20);
@@ -420,6 +411,14 @@ public class Chat extends javax.swing.JFrame {
 
         jMenuItem2.setText("Search Public Keys");
         jMenu2.add(jMenuItem2);
+
+        jMenuItem8.setText("Use my existing Key");
+        jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem8ActionPerformed(evt);
+            }
+        });
+        jMenu2.add(jMenuItem8);
 
         jMenuItem3.setText("Generate Keys");
         jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
@@ -464,13 +463,14 @@ public class Chat extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
+                        .addComponent(jCheckBoxEncrypt, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 142, Short.MAX_VALUE)
                             .addComponent(jLabel1)
                             .addComponent(jLabel2)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(jLabel3))
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 142, Short.MAX_VALUE)
+                            .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                         .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
@@ -478,11 +478,7 @@ public class Chat extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(btnEnviar)
                                 .addGap(0, 0, Short.MAX_VALUE))
-                            .addComponent(jScrollPane1)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jCheckBoxSign)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jCheckBoxEncrypt, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jScrollPane1))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -498,21 +494,16 @@ public class Chat extends javax.swing.JFrame {
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel3)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(0, 137, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE)
+                        .addComponent(jScrollPane1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtMsgEnviar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(btnEnviar, javax.swing.GroupLayout.Alignment.TRAILING))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jCheckBoxEncrypt)
-                    .addComponent(jCheckBoxSign))
-                .addContainerGap())
+                .addComponent(jCheckBoxEncrypt)
+                .addGap(12, 12, 12))
         );
 
         pack();
@@ -730,7 +721,7 @@ public class Chat extends javax.swing.JFrame {
             }
 
             if (sKey == null) {
-               // throw new IllegalArgumentException("secret key for message not found.");
+                // throw new IllegalArgumentException("secret key for message not found.");
                 System.out.println("secret key for message not found.");
                 return;
             }
@@ -1022,6 +1013,33 @@ public class Chat extends javax.swing.JFrame {
         UsersPublicKey window = new UsersPublicKey(usuarioMap);
         window.setVisible(true);
     }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void jMenuItem8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem8ActionPerformed
+        String privateKey = JOptionPane.showInputDialog(
+                this,
+                "Insert your private key content:",
+                "Insert the private key",
+                JOptionPane.WARNING_MESSAGE
+        );
+        try (PrintWriter saida = new PrintWriter("./privada.asc")) {
+            saida.println(privateKey);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        JOptionPane.showMessageDialog(this, "Private key was saved on application directory (privada.asc)!");
+        /*int generatePublic = JOptionPane.showConfirmDialog(this, "Do you want to generate your public key based on the private key?");
+        if(generatePublic == JOptionPane.YES_OPTION)
+        {
+            try {
+                PGPSecretKey key = readSecretKey("./privada.asc");
+                System.out.println(new String(key.getPublicKey().getEncoded()));
+            } catch (IOException ex) {
+                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (PGPException ex) {
+                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }*/
+    }//GEN-LAST:event_jMenuItem8ActionPerformed
 
     public PGPPublicKey getPublicKey(String dir) throws IOException, PGPException {
 
@@ -1463,10 +1481,8 @@ public class Chat extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnviar;
     private javax.swing.JCheckBox jCheckBoxEncrypt;
-    private javax.swing.JCheckBox jCheckBoxSign;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
@@ -1481,11 +1497,10 @@ public class Chat extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
+    private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JList<String> listApps;
     private javax.swing.JList<String> listCanais;
     private javax.swing.JList<String> listDM;
     private javax.swing.JTextField txtMsgEnviar;
@@ -1509,14 +1524,14 @@ public class Chat extends javax.swing.JFrame {
                 if (history.getMessages() != null) {
                     for (int i = history.getMessages().size() - 1; i >= 0; i--) {
                         if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
-                        if (password == null) {
-                            password = JOptionPane.showInputDialog(
-                                    this,
-                                    "There is a encrypted message, we can try to decrypt, please insert your private key password:",
-                                    "Secret code needed",
-                                    JOptionPane.WARNING_MESSAGE
-                            );
-                        }
+                            if (password == null) {
+                                password = JOptionPane.showInputDialog(
+                                        this,
+                                        "There is a encrypted message, we can try to decrypt, please insert your private key password:",
+                                        "Secret code needed",
+                                        JOptionPane.WARNING_MESSAGE
+                                );
+                            }
                             String result = decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
                             if (result != null || !result.isEmpty()) {
                                 txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + result);
