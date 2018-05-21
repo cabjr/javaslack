@@ -730,7 +730,9 @@ public class Chat extends javax.swing.JFrame {
             }
 
             if (sKey == null) {
-                throw new IllegalArgumentException("secret key for message not found.");
+               // throw new IllegalArgumentException("secret key for message not found.");
+                System.out.println("secret key for message not found.");
+                return;
             }
 
             InputStream clear = pbe.getDataStream(new JcePublicKeyDataDecryptorFactoryBuilder().setProvider("BC").build(sKey));
@@ -1516,7 +1518,7 @@ public class Chat extends javax.swing.JFrame {
                             );
                         }
                             String result = decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
-                            if (result != null) {
+                            if (result != null || !result.isEmpty()) {
                                 txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + result);
                             } else {
                                 txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": Sended an encrypted message");
