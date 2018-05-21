@@ -241,26 +241,45 @@ public class Chat extends javax.swing.JFrame {
                 System.out.println(channelID.getChannel().getId());
                 history = slack.methods().imHistory(ImHistoryRequest.builder().token(token).channel(channelID.getChannel().getId()).build());
             }
-
+            String password=null;
             //System.out.println("history " + history);
             if (history.getMessages() != null) {
                 for (int i = history.getMessages().size() - 1; i >= 0; i--) {
-                    if (history.getMessages().get(i).getUsername() != null) {
-                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                    } else if (history.getMessages().get(i).getText().contains("<@")) {
+                    if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
+                        if (password == null) {
+                            password = JOptionPane.showInputDialog(
+                                    this,
+                                    "There is a encrypted message, we can try to decrypt, please insert your private key password:",
+                                    "Secret code needed",
+                                    JOptionPane.WARNING_MESSAGE
+                            );
+                        }
+                        String result = decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
+                        if (result != null) {
+                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + result);
+                        } else {
+                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": Sended an encrypted message");
+                        }
+                    } else {
+                        if (history.getMessages().get(i).getUsername() != null) {
+                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
+                        } else if (history.getMessages().get(i).getText().contains("<@")) {
 
-                        /*String pieces[] = history.getMessages().get(i).getText().split(">");
+                            /*String pieces[] = history.getMessages().get(i).getText().split(">");
                         String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
                         System.out.println(name);*/
-                        txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+                            txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
 
-                    } else {
-                        txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                        } else {
+                            txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                        }
                     }
                 }
                 // }
             }
         } catch (IOException | SlackApiException ex) {
+            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchProviderException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         }
 
@@ -1484,23 +1503,43 @@ public class Chat extends javax.swing.JFrame {
                         .build());
                 System.out.println(channelID);
                 System.out.println(history);
+                String password = null;
                 if (history.getMessages() != null) {
                     for (int i = history.getMessages().size() - 1; i >= 0; i--) {
-                        if (history.getMessages().get(i).getUsername() != null) {
-                            txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                        } else if (history.getMessages().get(i).getText().contains("<@")) {
+                        if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
+                        if (password == null) {
+                            password = JOptionPane.showInputDialog(
+                                    this,
+                                    "There is a encrypted message, we can try to decrypt, please insert your private key password:",
+                                    "Secret code needed",
+                                    JOptionPane.WARNING_MESSAGE
+                            );
+                        }
+                            String result = decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
+                            if (result != null) {
+                                txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + result);
+                            } else {
+                                txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": Sended an encrypted message");
+                            }
+                        } else {
+                            if (history.getMessages().get(i).getUsername() != null) {
+                                txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
+                            } else if (history.getMessages().get(i).getText().contains("<@")) {
 
-                            /*String pieces[] = history.getMessages().get(i).getText().split(">");
+                                /*String pieces[] = history.getMessages().get(i).getText().split(">");
                         String name = slack.methods().usersProfileGet(UsersProfileGetRequest.builder().token(token).user(pieces[0].substring(2)).build()).getProfile().getDisplayName();
                         System.out.println(name);*/
-                            txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+                                txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
 
-                        } else {
-                            txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                            } else {
+                                txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
+                            }
                         }
                     }
                 }
             } catch (IOException | SlackApiException ex) {
+                Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NoSuchProviderException ex) {
                 Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
