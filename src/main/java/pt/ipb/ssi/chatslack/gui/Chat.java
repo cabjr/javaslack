@@ -10,14 +10,11 @@ import com.github.seratch.jslack.api.methods.SlackApiException;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
 import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
-import com.github.seratch.jslack.api.methods.request.conversations.ConversationsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.im.ImHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.im.ImListRequest;
 import com.github.seratch.jslack.api.methods.request.im.ImOpenRequest;
 import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
 import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
-import com.github.seratch.jslack.api.methods.response.chat.ChatPostMessageResponse;
-import com.github.seratch.jslack.api.methods.response.conversations.ConversationsHistoryResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImHistoryResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImListResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImOpenResponse;
@@ -36,7 +33,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -66,21 +62,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.swing.DefaultListModel;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.asn1.pkcs.RSAPublicKey;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.BCPGOutputStream;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
@@ -90,8 +78,6 @@ import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
-import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPCompressedDataGenerator;
@@ -106,7 +92,6 @@ import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPOnePassSignature;
 import org.bouncycastle.openpgp.PGPOnePassSignatureList;
-import org.bouncycastle.openpgp.PGPPBEEncryptedData;
 import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
@@ -134,15 +119,12 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyPair;
-import org.bouncycastle.openpgp.operator.jcajce.JcePBEDataDecryptorFactoryBuilder;
-import org.bouncycastle.openpgp.operator.jcajce.JcePBEKeyEncryptionMethodGenerator;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePGPDataEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyDataDecryptorFactoryBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyKeyEncryptionMethodGenerator;
 import org.bouncycastle.util.io.Streams;
-import pt.ipb.ssi.chatslack.rtm.RTMRunnable;
 import static sun.security.x509.CertificateAlgorithmId.ALGORITHM;
 
 /**
@@ -555,15 +537,16 @@ public class Chat extends javax.swing.JFrame {
                         System.out.println("./public_keys/" + usuarioMap.get(userName) + ".asc");
                         if (new File("./public_keys/" + usuarioMap.get(userName) + ".asc").exists()) {
                             System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(encryptMessage(mensagem, "./public_keys/" + usuarioMap.get(userName) + ".asc", true, true)).username("BotRandom").token(token).channel(channel).build()));
-                            setChatHistory();
+                            setDMChatHistory(usuarioMap.get(listDM.getSelectedValue()));
                             txtMsgEnviar.setText("");
                         } else {
                             JOptionPane.showMessageDialog(this, "You dont have the public key of this user registered!");
                         }
                     } else {
-                        slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(true).text(mensagem).username("TesteBotSDASDDAS").iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channel).build());
-                        setDMChatHistory(usuarioMap.get(userName).toString());
-                        txtMsgEnviar.setText("");
+                        slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(true).text(mensagem)
+                                //.username("TesteBotSDASDDAS")
+                                .iconEmoji(":chart_with_upwards_trend:").asUser(true).token(botUserToken).channel(channel).build());
+                        setDMChatHistory(usuarioMap.get(listDM.getSelectedValue()));
                     }
                 } catch (IOException ex) {
                     Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
@@ -574,6 +557,7 @@ public class Chat extends javax.swing.JFrame {
                 } catch (NoSuchProviderException ex) {
                     Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                txtMsgEnviar.setText("");
 
             }
         }
@@ -1516,7 +1500,7 @@ public class Chat extends javax.swing.JFrame {
                 ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
                         .token(token)
                         .channel(channelID)
-                        .count(1000)
+                        .count(5)
                         .build());
                 System.out.println(channelID);
                 System.out.println(history);
@@ -1562,10 +1546,6 @@ public class Chat extends javax.swing.JFrame {
         }
     }
 
-    private void setRTM() {
-        Thread thread = new Thread(new RTMRunnable(slack, token));
-        thread.start();
-    }
 
     public String getValueListDm() {
         return listDM.getSelectedValue();
