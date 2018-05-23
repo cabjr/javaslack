@@ -7,6 +7,7 @@ package pt.ipb.ssi.chatslack.gui;
 
 import com.github.seratch.jslack.Slack;
 import com.github.seratch.jslack.api.methods.SlackApiException;
+import com.github.seratch.jslack.api.methods.request.bots.BotsInfoRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
 import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
 import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
@@ -18,14 +19,22 @@ import com.github.seratch.jslack.api.methods.response.chat.ChatPostMessageRespon
 import com.github.seratch.jslack.api.methods.response.im.ImHistoryResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImOpenResponse;
 import com.github.seratch.jslack.api.model.Channel;
+import com.github.seratch.jslack.api.model.Message;
 import com.github.seratch.jslack.api.model.User;
+import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchProviderException;
 import java.security.Security;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -33,12 +42,16 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import pt.ipb.ssi.chatslack.gnupg.Openpgp;
+import pt.ipb.ssi.chatslack.model.MessageListModel;
+import pt.ipb.ssi.chatslack.renderer.MessageListRenderer;
 
 /**
  *
@@ -73,6 +86,8 @@ public class Chat_2 extends javax.swing.JFrame {
         this.token = token;
         listCanais.setModel(listModelCanais);
         listDM.setModel(listModelUsuarios);
+        //System.out.println("Bot Information  :  "
+        //        + slack.methods().botsInfo(BotsInfoRequest.builder().token(botUserToken).build()));
 
         setListChannel();
         setListUsers();
@@ -94,11 +109,38 @@ public class Chat_2 extends javax.swing.JFrame {
                 listCanais.clearSelection();
                 usuarioAtual = listDM.getSelectedIndex();
                 String userName = listDM.getSelectedValue();
-                System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
+                //System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
                 setChatHistory();
             }
 
         });
+
+        listMessages.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                System.out.println("listMe " + listMessages.getSelectedIndex());
+            }
+
+        });
+
+        listMessages.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent me) {
+                //Verificando se o botão direito do mouse foi clicado
+                MessageListModel value = listMessages.getModel().getElementAt(listMessages.locationToIndex(me.getPoint()));
+                System.out.println("Message " + value.toString());
+                if ((me.getModifiers() & MouseEvent.BUTTON3_MASK) != 0) {
+                    JPopupMenu menu = new JPopupMenu();
+                    add(menu);
+                    JMenuItem item = new JMenuItem("Item 1");
+                    menu.add(item);
+                    JMenuItem item2 = new JMenuItem("Item2");
+                    menu.add(item2);
+                    menu.show(menu, me.getXOnScreen(), me.getYOnScreen());
+                }
+            }
+        });
+
     }
 
     private void setListChannel() {
@@ -109,7 +151,7 @@ public class Chat_2 extends javax.swing.JFrame {
                     .getChannels().listIterator();
             while (channels.hasNext()) {
                 Channel canal = channels.next();
-                System.out.println(canal);
+//                System.out.println(canal);
                 if (canal != null) {
                     canais.add(canal);
                 }
@@ -148,6 +190,8 @@ public class Chat_2 extends javax.swing.JFrame {
         jMenuBar2 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
         jMenu4 = new javax.swing.JMenu();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList<>();
         txtMsgEnviar = new javax.swing.JTextField();
         btnEnviar = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
@@ -157,8 +201,8 @@ public class Chat_2 extends javax.swing.JFrame {
         jScrollPane3 = new javax.swing.JScrollPane();
         listDM = new javax.swing.JList<>();
         jCheckBoxEncrypt = new javax.swing.JCheckBox();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txtMsgRecebida = new javax.swing.JTextArea();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        listMessages = new javax.swing.JList<>();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
@@ -177,6 +221,13 @@ public class Chat_2 extends javax.swing.JFrame {
 
         jMenu4.setText("Edit");
         jMenuBar2.add(jMenu4);
+
+        jList1.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane4.setViewportView(jList1);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Chat");
@@ -203,10 +254,8 @@ public class Chat_2 extends javax.swing.JFrame {
 
         jCheckBoxEncrypt.setText("Encrypt & Sign");
 
-        txtMsgRecebida.setEditable(false);
-        txtMsgRecebida.setColumns(20);
-        txtMsgRecebida.setRows(5);
-        jScrollPane1.setViewportView(txtMsgRecebida);
+        listMessages.setFont(new java.awt.Font("Garamond", 0, 18)); // NOI18N
+        jScrollPane5.setViewportView(listMessages);
 
         jMenu1.setText("File");
 
@@ -278,9 +327,7 @@ public class Chat_2 extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jCheckBoxEncrypt, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(jCheckBoxEncrypt, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jLabel1)
@@ -290,12 +337,11 @@ public class Chat_2 extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(txtMsgEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, 411, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtMsgEnviar)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnEnviar)
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addComponent(jScrollPane1))))
-                .addContainerGap())
+                                .addComponent(btnEnviar))
+                            .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 599, Short.MAX_VALUE))))
+                .addGap(25, 25, 25))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -310,13 +356,14 @@ public class Chat_2 extends javax.swing.JFrame {
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 137, Short.MAX_VALUE))
+                        .addGap(0, 147, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtMsgEnviar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnEnviar, javax.swing.GroupLayout.Alignment.TRAILING))))
+                        .addGap(3, 3, 3)
+                        .addComponent(jScrollPane5)
+                        .addGap(9, 9, 9)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(txtMsgEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnEnviar))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jCheckBoxEncrypt)
                 .addGap(12, 12, 12))
@@ -338,7 +385,7 @@ public class Chat_2 extends javax.swing.JFrame {
         // Clique no botão de enviar
         if (listCanais.getSelectedIndex() != -1) {
             String channelID = canais.get(CanalAtual).getId();
-            System.out.println("Channel ID: " + channelID);
+//            System.out.println("Channel ID: " + channelID);
             if (!txtMsgEnviar.getText().isEmpty()) {
                 String mensagem = txtMsgEnviar.getText();
                 try {
@@ -360,12 +407,12 @@ public class Chat_2 extends javax.swing.JFrame {
         } else {
             if (!txtMsgEnviar.getText().isEmpty()) {
                 String userName = listDM.getSelectedValue();
-                System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
+//                System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
                 String channel = getChannelByUser();
                 String mensagem = txtMsgEnviar.getText();
                 try {
                     if (jCheckBoxEncrypt.isSelected()) {
-                        System.out.println("./public_keys/" + usuarioMap.get(userName) + ".asc");
+//                        System.out.println("./public_keys/" + usuarioMap.get(userName) + ".asc");
                         if (new File("./public_keys/" + usuarioMap.get(userName) + ".asc").exists()) {
                             String msg_encrypt = Openpgp.encryptMessage(mensagem, "./public_keys/" + usuarioMap.get(userName) + ".asc", true, true);
 
@@ -388,7 +435,7 @@ public class Chat_2 extends javax.swing.JFrame {
                                         .channel(channel)
                                         .build()
                         );
-                        System.out.println("resposta da mensagem " + test);
+//                        System.out.println("resposta da mensagem " + test);
                         setChatHistory();
                     }
                 } catch (IOException | SlackApiException | PGPException | NoSuchProviderException ex) {
@@ -488,6 +535,7 @@ public class Chat_2 extends javax.swing.JFrame {
     private javax.swing.JCheckBox jCheckBoxEncrypt;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JList<String> jList1;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
@@ -503,31 +551,44 @@ public class Chat_2 extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JList<String> listCanais;
     private javax.swing.JList<String> listDM;
+    private javax.swing.JList<MessageListModel> listMessages;
     private javax.swing.JTextField txtMsgEnviar;
-    private javax.swing.JTextArea txtMsgRecebida;
     // End of variables declaration//GEN-END:variables
 
     public void setChatHistory() {
+        // Cria o modelo e limpa a lista exibida
+        DefaultListModel<MessageListModel> listMessage = new DefaultListModel<>();
+        listMessages.setModel(listMessage);
+        listMessages.setCellRenderer(new MessageListRenderer());
         if (listCanais.getSelectedIndex() != -1) {
             try {
-                txtMsgRecebida.setText("");
                 String channelID = canais.get(CanalAtual).getId();
-                System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(botUserToken).build()).getMessages());
+//                System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(botUserToken).build()).getMessages());
                 ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
                         .token(token)
                         .channel(channelID)
                         .count(5)
                         .build());
-                System.out.println(channelID);
-                System.out.println(history);
+//                System.out.println(channelID);
+//                System.out.println(history);
                 String password = null;
                 if (history.getMessages() != null) {
                     for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                        String message = history.getMessages().get(i).getText();
+                        String userName = history.getMessages().get(i).getUsername();
+                        String date = history.getMessages().get(i).getTs();
+                        SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy");
+                        Date d = inputFormat.parse(date);
+                        System.out.println("d  " + d);
+                        if (userName == null) {
+                            userName = history.getMessages().get(i).getUser();
+                        }
                         if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
                             if (password == null) {
                                 password = JOptionPane.showInputDialog(
@@ -538,26 +599,19 @@ public class Chat_2 extends javax.swing.JFrame {
                                 );
                             }
                             String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
-                            if (result != null) {
-                                txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + result);
-                            } else {
-                                txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": Sended an encrypted message"  + "\n");
-                            }
-                        } else {
-                            if (history.getMessages().get(i).getUsername() != null) {
-                                txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                            } else if (history.getMessages().get(i).getText().contains("<@")) {
-                                txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
+                            MessageListModel msg = new MessageListModel(userName, result);
+                            listMessage.addElement(msg);
 
-                            } else {
-                                txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
-                            }
+                        } else {
+                            MessageListModel msg = new MessageListModel(userName, message);
+                            listMessage.addElement(msg);
+
                         }
                     }
                 }
-            } catch (IOException | SlackApiException ex) {
+            } catch (IOException | SlackApiException | NoSuchProviderException ex) {
                 Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (NoSuchProviderException ex) {
+            } catch (ParseException ex) {
                 Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
@@ -565,7 +619,6 @@ public class Chat_2 extends javax.swing.JFrame {
 
             if (listDM.getSelectedIndex() != -1) {
                 try {
-                    txtMsgRecebida.setText("");
                     String userID = getUserIDbyList();
                     ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(userID).token(token).build());
                     if (canal.getChannel().getId() != null) {
@@ -576,9 +629,15 @@ public class Chat_2 extends javax.swing.JFrame {
                                         .count(1000)
                                         .build());
                         String password = null;
-                        //System.out.println("history " + history);
                         if (history.getMessages() != null) {
                             for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                                //System.out.println("\n\n\n" + " History " + history + "\n\n\n");
+
+                                String message = history.getMessages().get(i).getText();
+                                String userName = history.getMessages().get(i).getUsername();
+                                if (userName == null) {
+                                    userName = history.getMessages().get(i).getUser();
+                                }
                                 if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
                                     if (password == null) {
                                         password = JOptionPane.showInputDialog(
@@ -588,34 +647,27 @@ public class Chat_2 extends javax.swing.JFrame {
                                                 JOptionPane.WARNING_MESSAGE
                                         );
                                     }
-                                    String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
-                                    System.out.println("result "+  result);
-                                    if (result != null) {
-                                        System.out.println("Aqui 1");
-                                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + result);
+                                    if (password != null) {
+                                        String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
+                                        MessageListModel msg = new MessageListModel(userName, result);
+                                        listMessage.addElement(msg);
                                     } else {
-                                        System.out.println("Aqui 2");
-                                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": Sended an encrypted message"  + "\n");
+                                        MessageListModel msg = new MessageListModel(userName, message);
+                                        listMessage.addElement(msg);
                                     }
                                 } else {
-                                    if (history.getMessages().get(i).getUsername() != null) {
-                                        txtMsgRecebida.append(history.getMessages().get(i).getUsername() + ": " + history.getMessages().get(i).getText() + "\n");
-                                    } else if (history.getMessages().get(i).getText().contains("<@")) {
-                                        txtMsgRecebida.append(/*name */" " + history.getMessages().get(i).getText() + "\n");
-                                    } else {
-                                        txtMsgRecebida.append(history.getMessages().get(i).getText() + "\n");
-                                    }
+                                    MessageListModel msg = new MessageListModel(userName, message);
+                                    listMessage.addElement(msg);
                                 }
                             }
                         }
                     }
-                } catch (IOException | SlackApiException ex) {
-                    Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (NoSuchProviderException ex) {
+                } catch (IOException | SlackApiException | NoSuchProviderException ex) {
                     Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
+        listMessages.setModel(listMessage);
     }
 
     private String getChannelByUser() {
