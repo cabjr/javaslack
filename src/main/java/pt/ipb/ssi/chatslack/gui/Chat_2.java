@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -192,6 +193,7 @@ public class Chat_2 extends javax.swing.JFrame {
         jMenu4 = new javax.swing.JMenu();
         jScrollPane4 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList<>();
+        jFileChooserMessage = new javax.swing.JFileChooser();
         txtMsgEnviar = new javax.swing.JTextField();
         btnEnviar = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
@@ -203,6 +205,7 @@ public class Chat_2 extends javax.swing.JFrame {
         jCheckBoxEncrypt = new javax.swing.JCheckBox();
         jScrollPane5 = new javax.swing.JScrollPane();
         listMessages = new javax.swing.JList<>();
+        jButton1 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
@@ -256,6 +259,13 @@ public class Chat_2 extends javax.swing.JFrame {
 
         listMessages.setFont(new java.awt.Font("Garamond", 0, 18)); // NOI18N
         jScrollPane5.setViewportView(listMessages);
+
+        jButton1.setText("Arquivo");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jMenu1.setText("File");
 
@@ -335,13 +345,15 @@ public class Chat_2 extends javax.swing.JFrame {
                             .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 142, Short.MAX_VALUE)
                             .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                         .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(txtMsgEnviar)
+                                .addComponent(txtMsgEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, 598, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnEnviar))
-                            .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 599, Short.MAX_VALUE))))
-                .addGap(25, 25, 25))
+                                .addComponent(btnEnviar)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jButton1))
+                            .addComponent(jScrollPane5))))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -356,15 +368,15 @@ public class Chat_2 extends javax.swing.JFrame {
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 147, Short.MAX_VALUE))
+                        .addGap(0, 141, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(3, 3, 3)
                         .addComponent(jScrollPane5)
                         .addGap(9, 9, 9)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(txtMsgEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnEnviar))))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(btnEnviar)
+                            .addComponent(jButton1))))
                 .addComponent(jCheckBoxEncrypt)
                 .addGap(12, 12, 12))
         );
@@ -530,9 +542,28 @@ public class Chat_2 extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jMenuItem8ActionPerformed
 
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        //Abrir para selecionar a imagem
+        int returnVal = jFileChooserMessage.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            // Chamar a tela que fara o upload da imagem
+            File file = jFileChooserMessage.getSelectedFile();
+            System.out.println("File" + file);
+            // What to do with the file, e.g. display it in a TextArea
+            FileUpload fileUpload = new FileUpload(slack, token, file);
+            fileUpload.setVisible(true);
+        } else {
+            System.out.println("File access cancelled by user.");
+        }
+
+
+    }//GEN-LAST:event_jButton1ActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnviar;
+    private javax.swing.JButton jButton1;
     private javax.swing.JCheckBox jCheckBoxEncrypt;
+    private javax.swing.JFileChooser jFileChooserMessage;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JList<String> jList1;
@@ -584,8 +615,6 @@ public class Chat_2 extends javax.swing.JFrame {
                         String userName = history.getMessages().get(i).getUsername();
                         String date = history.getMessages().get(i).getTs();
                         SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy");
-                        Date d = inputFormat.parse(date);
-                        System.out.println("d  " + d);
                         if (userName == null) {
                             userName = history.getMessages().get(i).getUser();
                         }
@@ -610,8 +639,6 @@ public class Chat_2 extends javax.swing.JFrame {
                     }
                 }
             } catch (IOException | SlackApiException | NoSuchProviderException ex) {
-                Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (ParseException ex) {
                 Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {

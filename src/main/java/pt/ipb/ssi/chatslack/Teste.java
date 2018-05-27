@@ -7,6 +7,7 @@ package pt.ipb.ssi.chatslack;
 
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import pt.ipb.ssi.chatslack.gnupg.Openpgp;
 import pt.ipb.ssi.chatslack.gui.Login;
 
 /**

@@ -21,6 +21,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,6 +48,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.swing.JOptionPane;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.BCPGOutputStream;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
@@ -118,6 +122,7 @@ public class Openpgp {
         Security.addProvider(new BouncyCastleProvider());
 
     }
+
     public PGPPublicKey getPublicKey(String dir) throws IOException, PGPException {
 
         PGPPublicKey key = null;
@@ -554,8 +559,8 @@ public class Openpgp {
         keyRingGen.addSubKey(rsakp_enc, enchashgen.generate(), null);
         return keyRingGen;
     }
-    
-        private static void exportKeyPair(
+
+    private static void exportKeyPair(
             OutputStream secretOut,
             OutputStream publicOut,
             KeyPair pair,
@@ -911,22 +916,9 @@ public class Openpgp {
             exportKeyPair(out1, out2, kp, email, password.toCharArray(), true);
             //.showMessageDialog(this, "Keys were generated and saved on the directory of this application!");
 
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchProviderException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (PGPException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeyException ex) {
-            Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SignatureException ex) {
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | IOException | PGPException | InvalidKeyException | SignatureException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
         }
         return true;
     }
-
 }
