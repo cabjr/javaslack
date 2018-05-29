@@ -53,6 +53,7 @@ import org.bouncycastle.openpgp.PGPException;
 import pt.ipb.ssi.chatslack.gnupg.Openpgp;
 import pt.ipb.ssi.chatslack.model.MessageListModel;
 import pt.ipb.ssi.chatslack.renderer.MessageListRenderer;
+import pt.ipb.ssi.chatslack.slack.SlackImpl;
 
 /**
  *
@@ -60,8 +61,9 @@ import pt.ipb.ssi.chatslack.renderer.MessageListRenderer;
  */
 public class Chat_2 extends javax.swing.JFrame {
 
+    SlackImpl slackImpl;
+
     String botUserToken, token;
-    Slack slack;
     int CanalAtual = 0;
     int usuarioAtual = 0;
     Map<String, String> usuarioMap = new HashMap<>();
@@ -82,7 +84,8 @@ public class Chat_2 extends javax.swing.JFrame {
         initComponents();
         gpg = new Openpgp();
 
-        this.slack = Slack.getInstance();
+        this.slackImpl = new SlackImpl(botUserToken, token);
+
         this.botUserToken = botUserToken;
         this.token = token;
         listCanais.setModel(listModelCanais);
@@ -145,37 +148,22 @@ public class Chat_2 extends javax.swing.JFrame {
     }
 
     private void setListChannel() {
-        try {
-            listModelCanais.removeAllElements();
-            canais.removeAll(canais);
-            ListIterator<Channel> channels = (ListIterator<Channel>) slack.methods().channelsList(ChannelsListRequest.builder().token(botUserToken).build())
-                    .getChannels().listIterator();
-            while (channels.hasNext()) {
-                Channel canal = channels.next();
-//                System.out.println(canal);
-                if (canal != null) {
-                    canais.add(canal);
-                }
-                listModelCanais.addElement(canal.getName());
-            }
-        } catch (IOException | SlackApiException ex) {
-            Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
+        listModelCanais.removeAllElements();
+        canais.removeAll(canais);
+        List<Channel> listChannels = slackImpl.getListChannels();
+        for (Channel channel : listChannels) {
+            canais.add(channel);
+            listModelCanais.addElement(channel.getName());
         }
     }
 
     private void setListUsers() {
-        try {
-            List<User> users = slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build())
-                    .getMembers();
-            System.out.println(slack.methods().usersList(UsersListRequest.builder().token(botUserToken).build()));
-            for (User user : users) {
-                if (!user.isBot()) {
-                    listModelUsuarios.addElement(user.getName());
-                    usuarioMap.put(user.getName(), user.getId());
-                }
+        List<User> users = slackImpl.getListUsers();
+        for (User user : users) {
+            if (!user.isBot()) {
+                listModelUsuarios.addElement(user.getName());
+                usuarioMap.put(user.getName(), user.getId());
             }
-        } catch (IOException | SlackApiException ex) {
-            Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -400,19 +388,14 @@ public class Chat_2 extends javax.swing.JFrame {
 //            System.out.println("Channel ID: " + channelID);
             if (!txtMsgEnviar.getText().isEmpty()) {
                 String mensagem = txtMsgEnviar.getText();
-                try {
-                    if (jCheckBoxEncrypt.isSelected()) {
-                        SelectPublicKey_2 window = new SelectPublicKey_2(this, usuarioMap);
-                        window.setVisible(true);
+                if (jCheckBoxEncrypt.isSelected()) {
+                    SelectPublicKey_2 window = new SelectPublicKey_2(this, usuarioMap);
+                    window.setVisible(true);
 
-                    } else {
-                        System.out.println(slack.methods().chatPostMessage(ChatPostMessageRequest.builder().asUser(false).text(mensagem).username("Bot com nick que eu quiser").token(token).channel(channelID).build()));
-                        setChatHistory();
-                        txtMsgEnviar.setText("");
-                    }
-
-                } catch (IOException | SlackApiException ex) {
-                    Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
+                } else {
+                    slackImpl.sendMessage(channelID, mensagem);
+                    setChatHistory();
+                    txtMsgEnviar.setText("");
                 }
 
             }
@@ -420,7 +403,7 @@ public class Chat_2 extends javax.swing.JFrame {
             if (!txtMsgEnviar.getText().isEmpty()) {
                 String userName = listDM.getSelectedValue();
 //                System.out.println("userName " + userName + " ID " + usuarioMap.get(userName));
-                String channel = getChannelByUser();
+                String channel = slackImpl.getChannelByUser(getUserIDbyList());
                 String mensagem = txtMsgEnviar.getText();
                 try {
                     if (jCheckBoxEncrypt.isSelected()) {
@@ -428,29 +411,26 @@ public class Chat_2 extends javax.swing.JFrame {
                         if (new File("./public_keys/" + usuarioMap.get(userName) + ".asc").exists()) {
                             String msg_encrypt = Openpgp.encryptMessage(mensagem, "./public_keys/" + usuarioMap.get(userName) + ".asc", true, true);
 
-                            System.out.println(slack.methods().chatPostMessage(
-                                    ChatPostMessageRequest.builder()
-                                            .asUser(false)
-                                            .text(msg_encrypt)
-                                            //.username("BotRandom")
-                                            .token(token).channel(channel).build()));
-                            setChatHistory();
-                            txtMsgEnviar.setText("");
+                            boolean sendMessage = slackImpl.sendMessage(channel, msg_encrypt);
+                            if (sendMessage) {
+                                setChatHistory();
+                                txtMsgEnviar.setText("");
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Erro ao enviar a Mensagem!");
+                            }
                         } else {
                             JOptionPane.showMessageDialog(this, "You dont have the public key of this user registered!");
                         }
                     } else {
-                        ChatPostMessageResponse test = slack.methods().chatPostMessage(
-                                ChatPostMessageRequest.builder()
-                                        .text(mensagem)
-                                        .token(token)
-                                        .channel(channel)
-                                        .build()
-                        );
-//                        System.out.println("resposta da mensagem " + test);
-                        setChatHistory();
+                        boolean sendMessage = slackImpl.sendMessage(channel, mensagem);
+                        if (sendMessage) {
+                            setChatHistory();
+                            txtMsgEnviar.setText("");
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Erro ao enviar a Mensagem!");
+                        }
                     }
-                } catch (IOException | SlackApiException | PGPException | NoSuchProviderException ex) {
+                } catch (IOException | PGPException | NoSuchProviderException ex) {
                     Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 txtMsgEnviar.setText("");
@@ -550,7 +530,7 @@ public class Chat_2 extends javax.swing.JFrame {
             File file = jFileChooserMessage.getSelectedFile();
             System.out.println("File" + file);
             // What to do with the file, e.g. display it in a TextArea
-            FileUpload fileUpload = new FileUpload(slack, token, file);
+            FileUpload fileUpload = new FileUpload(slackImpl, token, file, this);
             fileUpload.setVisible(true);
         } else {
             System.out.println("File access cancelled by user.");
@@ -601,13 +581,7 @@ public class Chat_2 extends javax.swing.JFrame {
             try {
                 String channelID = canais.get(CanalAtual).getId();
 //                System.out.println(slack.methods().channelsHistory(ChannelsHistoryRequest.builder().token(botUserToken).build()).getMessages());
-                ChannelsHistoryResponse history = slack.methods().channelsHistory(ChannelsHistoryRequest.builder()
-                        .token(token)
-                        .channel(channelID)
-                        .count(5)
-                        .build());
-//                System.out.println(channelID);
-//                System.out.println(history);
+                ChannelsHistoryResponse history = slackImpl.getChannelHistory(channelID);
                 String password = null;
                 if (history.getMessages() != null) {
                     for (int i = history.getMessages().size() - 1; i >= 0; i--) {
@@ -638,7 +612,7 @@ public class Chat_2 extends javax.swing.JFrame {
                         }
                     }
                 }
-            } catch (IOException | SlackApiException | NoSuchProviderException ex) {
+            } catch (IOException | NoSuchProviderException ex) {
                 Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
@@ -647,65 +621,47 @@ public class Chat_2 extends javax.swing.JFrame {
             if (listDM.getSelectedIndex() != -1) {
                 try {
                     String userID = getUserIDbyList();
-                    ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(userID).token(token).build());
-                    if (canal.getChannel().getId() != null) {
-                        ImHistoryResponse history = slack.methods().imHistory(
-                                ImHistoryRequest.builder()
-                                        .channel(canal.getChannel().getId())
-                                        .token(token)
-                                        .count(1000)
-                                        .build());
-                        String password = null;
-                        if (history.getMessages() != null) {
-                            for (int i = history.getMessages().size() - 1; i >= 0; i--) {
-                                //System.out.println("\n\n\n" + " History " + history + "\n\n\n");
+                    ImHistoryResponse history = slackImpl.getChannelDM(userID);
+                    String password = null;
+                    if (history.getMessages() != null) {
+                        for (int i = history.getMessages().size() - 1; i >= 0; i--) {
+                            //System.out.println("\n\n\n" + " History " + history + "\n\n\n");
 
-                                String message = history.getMessages().get(i).getText();
-                                String userName = history.getMessages().get(i).getUsername();
-                                if (userName == null) {
-                                    userName = history.getMessages().get(i).getUser();
+                            String message = history.getMessages().get(i).getText();
+                            String userName = history.getMessages().get(i).getUsername();
+                            if (userName == null) {
+                                userName = history.getMessages().get(i).getUser();
+                            }
+                            if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
+                                if (password == null) {
+                                    password = JOptionPane.showInputDialog(
+                                            this,
+                                            "There is a encrypted message, we can try to decrypt, please insert your private key password:",
+                                            "Secret code needed",
+                                            JOptionPane.WARNING_MESSAGE
+                                    );
                                 }
-                                if (history.getMessages().get(i).getText().contains("-----BEGIN PGP MESSAGE-----")) {
-                                    if (password == null) {
-                                        password = JOptionPane.showInputDialog(
-                                                this,
-                                                "There is a encrypted message, we can try to decrypt, please insert your private key password:",
-                                                "Secret code needed",
-                                                JOptionPane.WARNING_MESSAGE
-                                        );
-                                    }
-                                    if (password != null) {
-                                        String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
-                                        MessageListModel msg = new MessageListModel(userName, result);
-                                        listMessage.addElement(msg);
-                                    } else {
-                                        MessageListModel msg = new MessageListModel(userName, message);
-                                        listMessage.addElement(msg);
-                                    }
+                                if (password != null) {
+                                    String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
+                                    MessageListModel msg = new MessageListModel(userName, result);
+                                    listMessage.addElement(msg);
                                 } else {
                                     MessageListModel msg = new MessageListModel(userName, message);
                                     listMessage.addElement(msg);
                                 }
+                            } else {
+                                MessageListModel msg = new MessageListModel(userName, message);
+                                listMessage.addElement(msg);
                             }
                         }
                     }
-                } catch (IOException | SlackApiException | NoSuchProviderException ex) {
+
+                } catch (IOException | NoSuchProviderException ex) {
                     Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
         listMessages.setModel(listMessage);
-    }
-
-    private String getChannelByUser() {
-        try {
-            ImOpenResponse canal = slack.methods().imOpen(ImOpenRequest.builder().user(getUserIDbyList()).token(token).build());
-            return canal.getChannel().getId();
-        } catch (IOException | SlackApiException ex) {
-            Logger.getLogger(Chat_2.class
-                    .getName()).log(Level.SEVERE, null, ex);
-        }
-        return "";
     }
 
     private String getUserIDbyList() {

@@ -5,21 +5,13 @@
  */
 package pt.ipb.ssi.chatslack.gui;
 
-import com.github.seratch.jslack.Slack;
-import com.github.seratch.jslack.api.methods.SlackApiException;
-import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
-import com.github.seratch.jslack.api.methods.request.files.FilesUploadRequest;
-import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
-import com.github.seratch.jslack.api.methods.response.files.FilesUploadResponse;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
+import pt.ipb.ssi.chatslack.slack.SlackImpl;
 
 /**
  *
@@ -31,39 +23,33 @@ public class FileUpload extends javax.swing.JFrame {
      * Creates new form FileUpload
      */
     List<Channel> channels;
-    Slack slack;
+    SlackImpl slackImpl;
     String token;
     File file;
+    Chat_2 chat;
 
     private FileUpload() {
         initComponents();
     }
 
-    public FileUpload(Slack slack, String token, File file) {
+    public FileUpload(SlackImpl slackImpl, String token, File file, Chat_2 chat) {
         initComponents();
         this.token = token;
-        this.slack = slack;
+        this.slackImpl = slackImpl;
         this.file = file;
+        this.chat = chat;
         if (file != null) {
-            try {
-                txtTitulo.setText(file.getName());
-                //jImagem.set(new FileReader(file.getAbsolutePath()), null);
-                channels = slack.methods().channelsList(ChannelsListRequest.builder().token(token).build())
-                        .getChannels();
-                List<User> users = slack.methods().usersList(UsersListRequest.builder().token(token).build())
-                        .getMembers();
-                for (Channel channel : channels) {
-                    cbChannel.addItem(channel.getName());
+            txtTitulo.setText(file.getName());
+            //jImagem.set(new FileReader(file.getAbsolutePath()), null);
+            channels = slackImpl.getListChannels();
+            List<User> users = slackImpl.getListUsers();
+            for (Channel channel : channels) {
+                cbChannel.addItem(channel.getName());
+            }
+            for (User user : users) {
+                if (!user.isBot()) {
+                    cbChannel.addItem(user.getName());
                 }
-                for (User user : users) {
-                    if (!user.isBot()) {
-                        cbChannel.addItem(user.getName());
-                    }
-                }
-            } catch (IOException ex) {
-                Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SlackApiException ex) {
-                Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
             }
 
         }
@@ -81,21 +67,16 @@ public class FileUpload extends javax.swing.JFrame {
         jFileChooser1 = new javax.swing.JFileChooser();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
         txtTitulo = new javax.swing.JTextField();
-        txtComentario = new javax.swing.JTextField();
         cbChannel = new javax.swing.JComboBox<>();
         btnEnviar = new javax.swing.JButton();
         btnCancelar = new javax.swing.JButton();
-        jImagem = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jLabel2.setText("Titulo");
 
         jLabel3.setText("Compartilhar com");
-
-        jLabel4.setText("Comentario (Opcional)");
 
         btnEnviar.setText("Enviar");
         btnEnviar.addActionListener(new java.awt.event.ActionListener() {
@@ -118,11 +99,6 @@ public class FileUpload extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jImagem, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel2)
-                        .addGap(109, 109, 109)
-                        .addComponent(txtTitulo))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(btnCancelar)
@@ -130,12 +106,12 @@ public class FileUpload extends javax.swing.JFrame {
                         .addComponent(btnEnviar))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel3))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(jLabel3)
+                            .addComponent(jLabel2))
+                        .addGap(39, 39, 39)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(cbChannel, 0, 191, Short.MAX_VALUE)
-                            .addComponent(txtComentario))
+                            .addComponent(txtTitulo)
+                            .addComponent(cbChannel, 0, 191, Short.MAX_VALUE))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -143,8 +119,6 @@ public class FileUpload extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jImagem, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
                     .addComponent(txtTitulo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -152,10 +126,6 @@ public class FileUpload extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(cbChannel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(txtComentario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnEnviar)
@@ -168,23 +138,34 @@ public class FileUpload extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
+        List<String> listChannel = new ArrayList<>();
+
         String x = String.valueOf(cbChannel.getSelectedItem());
-        List<String> asdas = new ArrayList<>();
-        asdas.add(x);
-        FilesUploadResponse response = null;
-        try {
-            response = slack.methods().filesUpload(FilesUploadRequest.builder()
-                    .token(token)
-                    .channels(asdas)
-                    .file(file)
-                    .filename(file.getName())
-                    .title(txtTitulo.getText())
-                    .build());
-        } catch (IOException | SlackApiException ex) {
-            Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+        boolean isChannel = false;
+        for (Channel channel : channels) {
+            if (channel.getName().equals(x)) {
+                isChannel = true;
+            }
         }
-        if (response.isOk()) {
+
+        if (!isChannel) {
+            //se não for um canal
+            // então procurar na lista de usuarios;
+            List<User> users = slackImpl.getListUsers();
+            for (User user : users) {
+                if (user.getName().equals(x)) {
+                    //Pegar o id do canal do usuario
+                    String channelByUser = slackImpl.getChannelByUser(user.getId());
+                    listChannel.add(channelByUser);
+                }
+            }
+        } else {
+            listChannel.add(x);
+        }
+        boolean response = slackImpl.sendFile(file, listChannel, txtTitulo.getText());
+        if (response) {
             JOptionPane.showMessageDialog(null, "Arquivo enviado!");
+            chat.setChatHistory();
             dispose();
         } else {
             JOptionPane.showMessageDialog(null, "Arquivo não enviado!");
@@ -199,11 +180,8 @@ public class FileUpload extends javax.swing.JFrame {
     private javax.swing.JButton btnEnviar;
     private javax.swing.JComboBox<String> cbChannel;
     private javax.swing.JFileChooser jFileChooser1;
-    private javax.swing.JLabel jImagem;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JTextField txtComentario;
     private javax.swing.JTextField txtTitulo;
     // End of variables declaration//GEN-END:variables
 }

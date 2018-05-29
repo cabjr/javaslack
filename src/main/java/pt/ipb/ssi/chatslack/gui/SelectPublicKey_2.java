@@ -124,20 +124,12 @@ public class SelectPublicKey_2 extends javax.swing.JFrame {
                 String mensagem = gpg.encryptMessage(
                         chat.getMensagem(), "./public_keys/" + usuarioMap.get(jComboBox1.getSelectedItem()) + ".asc", true, true);
 
-                    System.out.println(chat.slack.methods().chatPostMessage(
-                            ChatPostMessageRequest.builder().asUser(false)
-                                    .username("BotPGP")
-                                    .text(mensagem)
-                                    .token(chat.token)
-                                    .channel(chat.canais.get(chat.CanalAtual).getId())
-                                    .build()));
-
-                
+               chat.slackImpl.sendMessage(mensagem, chat.canais.get(chat.CanalAtual).getId());             
                 
                 chat.setChatHistory();
                 chat.limpaCampo();
                 this.dispose();
-            } catch (IOException | PGPException | NoSuchProviderException | SlackApiException ex) {
+            } catch (IOException | PGPException | NoSuchProviderException ex) {
                 Logger.getLogger(SelectPublicKey_2.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
