@@ -5,23 +5,10 @@
  */
 package pt.ipb.ssi.chatslack.gui;
 
-import com.github.seratch.jslack.Slack;
-import com.github.seratch.jslack.api.methods.SlackApiException;
-import com.github.seratch.jslack.api.methods.request.bots.BotsInfoRequest;
-import com.github.seratch.jslack.api.methods.request.channels.ChannelsHistoryRequest;
-import com.github.seratch.jslack.api.methods.request.channels.ChannelsListRequest;
-import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
-import com.github.seratch.jslack.api.methods.request.im.ImHistoryRequest;
-import com.github.seratch.jslack.api.methods.request.im.ImOpenRequest;
-import com.github.seratch.jslack.api.methods.request.users.UsersListRequest;
 import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryResponse;
-import com.github.seratch.jslack.api.methods.response.chat.ChatPostMessageResponse;
 import com.github.seratch.jslack.api.methods.response.im.ImHistoryResponse;
-import com.github.seratch.jslack.api.methods.response.im.ImOpenResponse;
 import com.github.seratch.jslack.api.model.Channel;
-import com.github.seratch.jslack.api.model.Message;
 import com.github.seratch.jslack.api.model.User;
-import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -30,14 +17,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchProviderException;
 import java.security.Security;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -90,6 +73,7 @@ public class Chat_2 extends javax.swing.JFrame {
         this.token = token;
         listCanais.setModel(listModelCanais);
         listDM.setModel(listModelUsuarios);
+        slackImpl.downloadFile("FAY298DRB");
         //System.out.println("Bot Information  :  "
         //        + slack.methods().botsInfo(BotsInfoRequest.builder().token(botUserToken).build()));
 
@@ -204,6 +188,7 @@ public class Chat_2 extends javax.swing.JFrame {
         jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenuItem6 = new javax.swing.JMenuItem();
+        jMenuItem9 = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
         jMenuItem7 = new javax.swing.JMenuItem();
 
@@ -301,6 +286,14 @@ public class Chat_2 extends javax.swing.JFrame {
             }
         });
         jMenu2.add(jMenuItem6);
+
+        jMenuItem9.setText("User List Key");
+        jMenuItem9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem9ActionPerformed(evt);
+            }
+        });
+        jMenu2.add(jMenuItem9);
 
         jMenuBar1.add(jMenu2);
 
@@ -539,6 +532,10 @@ public class Chat_2 extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    private void jMenuItem9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem9ActionPerformed
+        // Abre a lista de usuarios com chaves
+    }//GEN-LAST:event_jMenuItem9ActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnviar;
     private javax.swing.JButton jButton1;
@@ -562,6 +559,7 @@ public class Chat_2 extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenuItem jMenuItem9;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
@@ -623,6 +621,8 @@ public class Chat_2 extends javax.swing.JFrame {
                     String userID = getUserIDbyList();
                     ImHistoryResponse history = slackImpl.getChannelDM(userID);
                     String password = null;
+                    System.out.println("history.getMessages() " + history);
+                    System.out.println("Fim \n\n\n\n) ");
                     if (history.getMessages() != null) {
                         for (int i = history.getMessages().size() - 1; i >= 0; i--) {
                             //System.out.println("\n\n\n" + " History " + history + "\n\n\n");
