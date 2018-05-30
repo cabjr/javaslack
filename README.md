@@ -1,7 +1,7 @@
 -------------------------------------------------
--												-
--			Chat Criptogravado Slack	     	-
--												-
+-                                               -
+-	Chat Criptogravado Slack	     	-
+-						-
 -------------------------------------------------
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
 **Sumário**
@@ -21,3 +21,4 @@
 
 ### Fazer
 * Separa por data as mensagens 
+* No metodo SlackImpl.downloadFile implementar uma forma de o usuario trocar de nome o arquivo

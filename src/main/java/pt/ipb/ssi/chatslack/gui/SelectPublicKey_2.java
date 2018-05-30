@@ -5,8 +5,6 @@
  */
 package pt.ipb.ssi.chatslack.gui;
 
-import com.github.seratch.jslack.api.methods.SlackApiException;
-import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchProviderException;
