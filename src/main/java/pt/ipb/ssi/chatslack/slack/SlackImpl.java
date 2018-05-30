@@ -38,6 +38,10 @@ import com.github.seratch.jslack.api.methods.response.users.UsersSetPresenceResp
 import com.github.seratch.jslack.api.methods.response.users.profile.UsersProfileGetResponse;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
+import com.github.seratch.jslack.api.rtm.RTMClient;
+import com.github.seratch.jslack.api.rtm.RTMMessageHandler;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -45,6 +49,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import org.apache.commons.io.FileUtils;
 import pt.ipb.ssi.chatslack.gui.Chat_2;
 
@@ -276,7 +282,7 @@ public class SlackImpl {
                     FilesSharedPublicURLRequest.builder().token(token).file(fileID).build());
             System.out.println("fileDelete " + response);
             return response.isOk();
-        } catch ( SlackApiException | IOException ex) {
+        } catch (SlackApiException | IOException ex) {
             Logger.getLogger(SlackImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
         return false;
@@ -295,31 +301,54 @@ public class SlackImpl {
         return false;
     }
 
-    public boolean downloadFile(String fileID) {
+    public boolean downloadFile(String fileID, Chat_2 chat) {
         try {
+            //Como a api não permite o download de arquivos é realizado o compatilhamento desse arquivo
             compartilharFile(fileID);
+            //Busca as informações do file
             FilesInfoResponse response = slack.methods().filesInfo(FilesInfoRequest.builder()
                     .token(token)
                     .file(fileID)
                     .build());
-            System.out.println("response " + response);
-            com.github.seratch.jslack.api.model.File f = response.getFile();
-            String urlPublic = f.getPermalinkPublic();
+            com.github.seratch.jslack.api.model.File fileMessage = response.getFile();
+
+            //Monta a URL para o download do Arquivo por meio da URL Publica do arquivo
+            String urlPublic = fileMessage.getPermalinkPublic();
             String[] separa = urlPublic.split("-");
             System.out.println("URL Code: " + separa[separa.length - 1]);
-            String urlString = f.getUrlPrivate() + "?pub_secret=" + separa[separa.length - 1];
+            String urlString = fileMessage.getUrlPrivate() + "?pub_secret=" + separa[separa.length - 1];
             System.out.println("URL Download" + urlString);
             URL url = new URL(urlString);
-            String salve = "./" + f.getName();
-            File file = new File(salve);
-            FileUtils.copyURLToFile(url, file);
-            revokePublicFile(fileID);
+
+            //Pega o local onde o usuario quer salvar o arquivo 
+            String userDir = System.getProperty("user.home");
+            final JFileChooser fc = new JFileChooser(userDir + "/Desktop");
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            fc.setDialogTitle("Baixar Arquivo do SLACK");
+            fc.setAcceptAllFileFilterUsed(false);
+            int returnVal = fc.showOpenDialog(chat);
+            String salve = "/" + fileMessage.getName();
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                salve = fc.getSelectedFile().getAbsolutePath() + salve;
+                //Copia dos dados do arquivo para o local selecionado
+                File file = new File(salve);
+                FileUtils.copyURLToFile(url, file);
+
+                //Cancela o compartilhamento do arquivo
+                revokePublicFile(fileID);
+                return true;
+
+            } else {
+                revokePublicFile(fileID);
+                return false;
+            }
+
         } catch (MalformedURLException ex) {
             Logger.getLogger(SlackImpl.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException | SlackApiException ex) {
             Logger.getLogger(SlackImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return true;
+        return false;
 
     }
 

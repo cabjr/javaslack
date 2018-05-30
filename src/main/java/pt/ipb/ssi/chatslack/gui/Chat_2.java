@@ -9,6 +9,8 @@ import com.github.seratch.jslack.api.methods.response.channels.ChannelsHistoryRe
 import com.github.seratch.jslack.api.methods.response.im.ImHistoryResponse;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -73,10 +75,10 @@ public class Chat_2 extends javax.swing.JFrame {
         this.token = token;
         listCanais.setModel(listModelCanais);
         listDM.setModel(listModelUsuarios);
-        slackImpl.downloadFile("FAY298DRB");
-        //System.out.println("Bot Information  :  "
-        //        + slack.methods().botsInfo(BotsInfoRequest.builder().token(botUserToken).build()));
+        //slackImpl.downloadFile("FAY298DRB");
 
+//System.out.println("Bot Information  :  "
+        //        + slack.methods().botsInfo(BotsInfoRequest.builder().token(botUserToken).build()));
         setListChannel();
         setListUsers();
         setChatHistory();
@@ -118,13 +120,40 @@ public class Chat_2 extends javax.swing.JFrame {
                 MessageListModel value = listMessages.getModel().getElementAt(listMessages.locationToIndex(me.getPoint()));
                 System.out.println("Message " + value.toString());
                 if ((me.getModifiers() & MouseEvent.BUTTON3_MASK) != 0) {
-                    JPopupMenu menu = new JPopupMenu();
-                    add(menu);
-                    JMenuItem item = new JMenuItem("Item 1");
-                    menu.add(item);
-                    JMenuItem item2 = new JMenuItem("Item2");
-                    menu.add(item2);
-                    menu.show(menu, me.getXOnScreen(), me.getYOnScreen());
+                    JPopupMenu jPopupMenu = new JPopupMenu();
+
+                    //Verifica se a mensagem tem Arquivo para download;
+                    if (value.getMessageSlack().getFile() != null) {
+                        JMenuItem menuDownload = new JMenuItem("Download");
+                        jPopupMenu.add(menuDownload);
+                        menuDownload.addActionListener(new ActionListener() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                //Pega o ID para o Download:
+                                String idFile = value.getMessageSlack().getFile().getId();
+                                boolean downloadFile = slackImpl.downloadFile(idFile, Chat_2.this);
+                                if (downloadFile) {
+                                    JOptionPane.showMessageDialog(null, "Arquivo Baixado");
+                                } else {
+                                    JOptionPane.showMessageDialog(null, "Arquivo Não Baixado");
+                                }
+                                System.out.println("Clicked ");
+                                System.out.println(value.getMessage());
+                            }
+                        });
+                    }
+
+                    JMenuItem menuItem = new JMenuItem("Menu Item");
+                    jPopupMenu.add(menuItem);
+                    menuItem.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            System.out.println("Clicked ");
+
+                        }
+                    });
+
+                    jPopupMenu.show(listMessages, me.getX(), me.getY());
                 }
             }
         });
@@ -600,11 +629,11 @@ public class Chat_2 extends javax.swing.JFrame {
                                 );
                             }
                             String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
-                            MessageListModel msg = new MessageListModel(userName, result);
+                            MessageListModel msg = new MessageListModel(userName, result, history.getMessages().get(i));
                             listMessage.addElement(msg);
 
                         } else {
-                            MessageListModel msg = new MessageListModel(userName, message);
+                            MessageListModel msg = new MessageListModel(userName, message, history.getMessages().get(i));
                             listMessage.addElement(msg);
 
                         }
@@ -643,14 +672,14 @@ public class Chat_2 extends javax.swing.JFrame {
                                 }
                                 if (password != null) {
                                     String result = Openpgp.decryptMessage(history.getMessages().get(i).getText(), "./privada.asc", password.toCharArray());
-                                    MessageListModel msg = new MessageListModel(userName, result);
+                                    MessageListModel msg = new MessageListModel(userName, result, history.getMessages().get(i));
                                     listMessage.addElement(msg);
                                 } else {
-                                    MessageListModel msg = new MessageListModel(userName, message);
+                                    MessageListModel msg = new MessageListModel(userName, message, history.getMessages().get(i));
                                     listMessage.addElement(msg);
                                 }
                             } else {
-                                MessageListModel msg = new MessageListModel(userName, message);
+                                MessageListModel msg = new MessageListModel(userName, message, history.getMessages().get(i));
                                 listMessage.addElement(msg);
                             }
                         }
