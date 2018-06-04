@@ -8,9 +8,16 @@ package pt.ipb.ssi.chatslack.gui;
 import com.github.seratch.jslack.api.model.Channel;
 import com.github.seratch.jslack.api.model.User;
 import java.io.File;
+import java.io.IOException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
+import org.apache.commons.io.FileUtils;
+import org.bouncycastle.openpgp.PGPException;
+import pt.ipb.ssi.chatslack.gnupg.Openpgp;
 import pt.ipb.ssi.chatslack.slack.SlackImpl;
 
 /**
@@ -139,7 +146,7 @@ public class FileUpload extends javax.swing.JFrame {
 
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
         List<String> listChannel = new ArrayList<>();
-
+        String userID="";
         String x = String.valueOf(cbChannel.getSelectedItem());
         boolean isChannel = false;
         for (Channel channel : channels) {
@@ -156,13 +163,33 @@ public class FileUpload extends javax.swing.JFrame {
                 if (user.getName().equals(x)) {
                     //Pegar o id do canal do usuario
                     String channelByUser = slackImpl.getChannelByUser(user.getId());
+                    userID = user.getId();
                     listChannel.add(channelByUser);
                 }
             }
         } else {
             listChannel.add(x);
         }
-        boolean response = slackImpl.sendFile(file, listChannel, txtTitulo.getText());
+        boolean response;
+        if (chat.isEncrypted() && !isChannel)
+        {
+            try {
+                Openpgp.encryptFile("./"+file.getName(),file.getPath(),"./public_keys/"+userID+".asc",true, true);
+            } catch (IOException ex) {
+                Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NoSuchProviderException ex) {
+                Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (PGPException ex) {
+                Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            response = slackImpl.sendFile(new File("./"+file.getName()), listChannel, txtTitulo.getText());
+            
+        }
+        else
+        {
+            response = slackImpl.sendFile(file, listChannel, txtTitulo.getText());
+        }
+        
         if (response) {
             JOptionPane.showMessageDialog(null, "Arquivo enviado!");
             chat.setChatHistory();

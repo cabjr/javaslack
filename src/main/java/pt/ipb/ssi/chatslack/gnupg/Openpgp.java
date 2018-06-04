@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Cipher;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -591,7 +592,7 @@ public class Openpgp {
         publicOut.close();
     }
 
-    private static void decryptFile(
+    public static void decryptFile(
             String inputFileName,
             String keyFileName,
             char[] passwd,
@@ -607,7 +608,7 @@ public class Openpgp {
     /**
      * decrypt the passed in message stream
      */
-    private static void decryptFile(
+    public static void decryptFile(
             InputStream in,
             InputStream keyIn,
             char[] passwd,
@@ -632,6 +633,11 @@ public class Openpgp {
             //
             // find the secret key
             //
+            if (enc == null)
+            {
+                JOptionPane.showMessageDialog(new JFrame(), "File is not encrypted");
+                return;
+            }
             Iterator it = enc.getEncryptedDataObjects();
             PGPPrivateKey sKey = null;
             PGPPublicKeyEncryptedData pbe = null;
@@ -700,7 +706,7 @@ public class Openpgp {
         }
     }
 
-    private static void encryptFile(
+    public static void encryptFile(
             String outputFileName,
             String inputFileName,
             String encKeyFileName,
@@ -863,7 +869,7 @@ public class Openpgp {
         return result;
     }
 
-    private static void encryptFile(
+    public static void encryptFile(
             OutputStream out,
             String fileName,
             PGPPublicKey encKey,

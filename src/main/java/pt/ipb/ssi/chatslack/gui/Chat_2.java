@@ -173,10 +173,10 @@ public class Chat_2 extends javax.swing.JFrame {
     private void setListUsers() {
         List<User> users = slackImpl.getListUsers();
         for (User user : users) {
-            if (!user.isBot()) {
-                listModelUsuarios.addElement(user.getName());
-                usuarioMap.put(user.getName(), user.getId());
-            }
+            // if (!user.isBot()) {
+            listModelUsuarios.addElement(user.getName());
+            usuarioMap.put(user.getName(), user.getId());
+            //  }
         }
     }
 
@@ -209,6 +209,7 @@ public class Chat_2 extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
+        jMenuItem10 = new javax.swing.JMenuItem();
         jMenuItem5 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -270,6 +271,14 @@ public class Chat_2 extends javax.swing.JFrame {
         });
 
         jMenu1.setText("File");
+
+        jMenuItem10.setText("Decrypt");
+        jMenuItem10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem10ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem10);
 
         jMenuItem5.setText("Quit");
         jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
@@ -561,9 +570,47 @@ public class Chat_2 extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    public boolean isEncrypted() {
+        if (jCheckBoxEncrypt.isSelected()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private void jMenuItem9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem9ActionPerformed
         // Abre a lista de usuarios com chaves
     }//GEN-LAST:event_jMenuItem9ActionPerformed
+
+    private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed
+        int returnVal = jFileChooserMessage.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                // Chamar a tela que fara o upload da imagem
+                File file = jFileChooserMessage.getSelectedFile();
+                String password = JOptionPane.showInputDialog(
+                        this,
+                        "Insert your password to decrypt the file:",
+                        "Secret code needed",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                Openpgp.decryptFile(file.getPath(), "./privada.asc", password.toCharArray(), "./dec_"+file.getName());
+                if (new File( "./"+file.getName()).exists())
+                {
+                    JOptionPane.showMessageDialog(this, "File decrypted and saved on directory of this application!");
+                }
+                else
+                {
+                    JOptionPane.showMessageDialog(this, "Error!\nFile could not be decrypted.");
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NoSuchProviderException ex) {
+                Logger.getLogger(Chat_2.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+    }//GEN-LAST:event_jMenuItem10ActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnviar;
@@ -581,6 +628,7 @@ public class Chat_2 extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuBar jMenuBar2;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem10;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
