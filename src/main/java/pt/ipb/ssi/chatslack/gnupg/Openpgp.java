@@ -920,7 +920,7 @@ public class Openpgp {
             FileOutputStream out2 = new FileOutputStream("publica.asc");
 
             exportKeyPair(out1, out2, kp, email, password.toCharArray(), true);
-            //.showMessageDialog(this, "Keys were generated and saved on the directory of this application!");
+            //showMessageDialog(this, "Keys were generated and saved on the directory of this application!");
 
         } catch (NoSuchAlgorithmException | NoSuchProviderException | IOException | PGPException | InvalidKeyException | SignatureException ex) {
             Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
