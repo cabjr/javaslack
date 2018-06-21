@@ -1,6 +1,6 @@
 -------------------------------------------------
 -                                               -
--	Chat Criptogravado Slack	     	-
+-	Chat Criptografado Slack	     	-
 -						-
 -------------------------------------------------
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
@@ -11,7 +11,7 @@
 
 <!-- markdown-toc end -->
 ### Objetivos
-* Criptogravar as mensagens
+* Criptografar as mensagens
 * Exportar as mensagens para MIT
 
 ### Erros
